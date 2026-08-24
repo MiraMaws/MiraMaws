@@ -103,33 +103,31 @@
   #pin h3 { color:var(--c); font-size:14px; letter-spacing:.08em; }
   #pin .meta { color:var(--d); font-size:11px; margin:3px 0 6px; }
   #mira {
-    position:fixed; right: max(16px, calc(50% - 430px)); bottom: 118px; z-index:8; width:156px;
-    pointer-events:auto; text-align:center;
+    position:relative; right:auto; bottom:auto; left:auto; z-index:8; width:96px;
+    flex:0 0 96px; pointer-events:auto; text-align:center;
   }
   #mira .frame {
-    width:156px; height:176px; overflow:hidden; position:relative;
-    border:1px solid #39f6ffcc; background:#02060c;
-    box-shadow:0 0 0 1px #ff2ea655, 0 0 18px #39f6ff55, inset 0 0 24px #000a;
-    clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+    width:96px; height:108px; overflow:hidden; position:relative;
+    border:1px solid #ff2ea688; background:#10051a;
+    box-shadow:0 0 12px #ff2ea644, inset 0 0 16px #000a;
+    clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
   }
   #mira .frame::after {
     content:""; position:absolute; inset:0; pointer-events:none;
-    background:repeating-linear-gradient(180deg, transparent 0 2px, #0018 3px);
-    mix-blend-mode:multiply;
+    background:repeating-linear-gradient(180deg, transparent 0 2px, #2008 3px);
   }
-  #mira img { width:100%; height:100%; object-fit:cover; object-position:center 10%; display:block; }
-  #mira.talk .frame { animation:talk 0.28s ease-in-out infinite; box-shadow:0 0 28px #39f6ffcc; }
-  #mira .tag { font-size:9px; letter-spacing:.18em; color:#ff9adf; margin-top:5px; text-shadow:0 0 8px #ff2ea6; }
-  #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:6; width:min(640px,78vw);
-    padding:8px 10px 10px; }
+  #mira img { width:100%; height:100%; object-fit:cover; object-position:center 12%; display:block; }
+  #mira.talk .frame { animation:talk 0.28s ease-in-out infinite; box-shadow:0 0 18px #ff2ea6aa; }
+  #mira .tag { font-size:8px; letter-spacing:.16em; color:#ff9adf; margin-top:4px; text-shadow:0 0 8px #ff2ea6; }
+  #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:6; width:min(720px,92vw);
+    padding:8px 10px 10px; display:flex; align-items:flex-end; gap:10px; }
+  .bar-main { flex:1; min-width:0; }
   .stat { flex:1; background:#10051a; border:1px solid #ff2ea644; text-align:center; padding:4px; }
   @keyframes talk { 50% { filter:brightness(1.12); transform:scale(1.015); } }
   @media (max-width:820px){
-    #mira { right:10px; bottom:140px; width:118px; }
-    #mira .frame { width:118px; height:132px; }
+    #mira { width:78px; flex-basis:78px; }
+    #mira .frame { width:78px; height:88px; }
   }
-  #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:6; width:min(640px,78vw);
-    padding:8px 10px 10px; background:linear-gradient(transparent,#03060dee); }
   .row { display:flex; gap:5px; }
   .stat { flex:1; background:var(--pan); border:1px solid var(--line); border-radius:2px; text-align:center; padding:4px; }
   .stat span { display:block; font-size:8px; letter-spacing:.12em; color:var(--d); }
@@ -211,7 +209,7 @@
 <body>
 <div id="globe"></div>
 <video id="reel" src="assets/earth_spin.mp4" muted loop playsinline autoplay></video>
-<audio id="chatter" src="assets/chatter.mp3" loop preload="auto"></audio>
+<audio id="chatter" src="/assets/chatter.mp3" loop preload="auto"></audio>
 <div id="fallback" aria-hidden="true"><div class="land"></div><div class="shade"></div></div>
 <div id="sol" aria-hidden="true">
   <i class="pl su" style="--r:46vmin"></i>
@@ -244,10 +242,6 @@
     </div>
   </div>
   <div id="brief"></div>
-</div>
-<div id="mira" title="Mira — desk anchor">
-  <div class="frame"><img src="/assets/mira.jpg" alt="Mira" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/MiraMaws/MiraMaws/main/assets/mira.jpg'"/></div>
-  <div class="tag">COMMS · MIRA</div>
 </div>
 <button class="tog" id="tL" type="button">‹</button>
 <button class="tog" id="tR" type="button">›</button>
@@ -299,6 +293,11 @@
   <div class="arch" id="arch"></div>
 </aside>
 <div id="bar" class="hud">
+  <div id="mira" title="Mira — desk anchor">
+    <div class="frame"><img src="/assets/mira.jpg" alt="Mira" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/MiraMaws/MiraMaws/main/assets/mira.jpg'"/></div>
+    <div class="tag">COMMS · MIRA</div>
+  </div>
+  <div class="bar-main">
   <div class="row">
     <div class="stat"><span>WORLD POP</span><b id="popN">—</b></div>
     <div class="stat"><span>UTC</span><b id="timeN">—</b></div>
@@ -311,6 +310,7 @@
     <button class="buy" id="bPop" type="button"><b>World population</b><small>UN-range clock</small></button>
     <button class="buy" id="bNow" type="button"><b>Current news</b><small>this story</small></button>
     <button class="buy" id="bNext" type="button"><b>Upcoming</b><small>next headline</small></button>
+  </div>
   </div>
 </div>
 <script>
@@ -909,6 +909,7 @@ if(pinEl) pinEl.onclick=()=>{
   if(ytPlayer && ytPlayer.destroy){ try{ ytPlayer.destroy(); }catch(e){} ytPlayer=null; }
   document.getElementById('ytwrap').style.display='none';
   setTimeout(()=>{ pin.style.display='none'; }, 400);
+  if(radioOn && !videoOn) resumeChatter();
 };
 const ytp=document.getElementById('ytPause');
 const yto=document.getElementById('ytPlay');
@@ -930,18 +931,21 @@ const chatter=document.getElementById('chatter');
 function pauseChatter(){ try{ if(chatter) chatter.pause(); }catch(e){} }
 function resumeChatter(){
   try{
-    if(!chatter) return;
-    chatter.volume=0.003;
+    if(!chatter || videoOn) return;
+    chatter.loop=true;
+    chatter.volume=0.08;
     const p=chatter.play();
     if(p&&p.catch) p.catch(()=>{});
   }catch(e){}
 }
 function armChatter(){
+  radioOn=true;
+  if(bRadio) bRadio.textContent='RADIO · ON';
   resumeChatter();
   document.removeEventListener('pointerdown', armChatter);
 }
 document.addEventListener('pointerdown', armChatter);
-if(chatter){ chatter.loop=true; chatter.volume=0.003; }
+if(chatter){ chatter.loop=true; chatter.volume=0.08; }
 const miraBox=document.getElementById('mira');
 if(miraBox) miraBox.onclick=()=>{
   if(videoOn) return;
