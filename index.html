@@ -1007,11 +1007,6 @@ async function loadToday(){
   return liveStories;
 }
 
-document.getElementById('bDay').onclick=async()=>{
-  if(!liveStories.some(s=>!seen.has(s.title))) await loadToday();
-  await showStory();
-};
-
 async function syncEarth(){
   document.getElementById('mOrb').textContent=orbitPct().toFixed(3)+'%';
   try{
