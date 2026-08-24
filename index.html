@@ -784,17 +784,25 @@ function waitYt(){
 function ytCmd(fn){
   try{ if(ytPlayer && typeof ytPlayer[fn]==='function') ytPlayer[fn](); }catch(e){}
 }
-function pickIds(obj, out){
-  const dump=JSON.stringify(obj);
-  const re=/"videoId"\s*:\s*"([\w-]{11})"/g;
-  let m; while((m=re.exec(dump))) out.push(m[1]);
-  (Array.isArray(obj)?obj:(obj.items||obj.videos||[])).forEach(v=>{
-    const id=v&&(v.videoId||(v.id&&v.id.videoId)||v.id);
-    if(id && /^[\w-]{11}$/.test(String(id))) out.push(String(id));
-    const u=String((v&&(v.url||v.videoUrl||v.link))||'');
+function pickHits(obj, out){
+  const items=Array.isArray(obj)?obj:(obj.items||obj.videos||[]);
+  items.forEach(v=>{
+    if(!v) return;
+    const id=v.videoId||(v.id&&v.id.videoId)||(typeof v.id==='string'?v.id:null);
+    const u=String(v.url||v.videoUrl||v.link||'');
     const mm=u.match(/(?:v=|\/embed\/|youtu\.be\/)([\w-]{11})/);
-    if(mm) out.push(mm[1]);
+    const vid=(id&&/^[\w-]{11}$/.test(String(id))?String(id):null)||(mm&&mm[1]);
+    if(!vid) return;
+    let dur=v.duration||v.lengthSeconds||v.length||0;
+    if(typeof dur==='string' && dur.indexOf(':')>=0){
+      const p=dur.split(':').map(Number);
+      dur=p.length===3?p[0]*3600+p[1]*60+p[2]:p[0]*60+(p[1]||0);
+    }
+    out.push({id:vid, dur:+dur||0});
   });
+  const dump=JSON.stringify(obj);
+  const re=/"videoId"\s*:\s*"([\w-]{11})"/g; let m;
+  while((m=re.exec(dump))) out.push({id:m[1], dur:0});
 }
 async function findYtIds(query){
   const q=encodeURIComponent(String(query||'world news'));
@@ -808,17 +816,21 @@ async function findYtIds(query){
   ];
   const jobs=urls.map(u=>Promise.race([
     fetch(u).then(r=>r.text()).then(txt=>{
-      const ids=[];
-      try{ pickIds(JSON.parse(txt), ids); }catch(e){
-        [...txt.matchAll(/(?:watch\?v=|\/embed\/|"videoId":")([\w-]{11})/g)].forEach(m=>ids.push(m[1]));
+      const hits=[];
+      try{ pickHits(JSON.parse(txt), hits); }catch(e){
+        [...txt.matchAll(/(?:watch\?v=|\/embed\/|"videoId":")([\w-]{11})/g)].forEach(m=>hits.push({id:m[1], dur:0}));
       }
-      return ids;
+      return hits;
     }),
     new Promise(res=>setTimeout(()=>res([]), 4500))
   ]).catch(()=>[]));
   const batches=await Promise.all(jobs);
-  const ids=[].concat(...batches);
-  return [...new Set(ids)].filter(id=>/^[\w-]{11}$/.test(id)&&!/^[0_]{11}$/.test(id)).slice(0,8);
+  const hits=[].concat(...batches);
+  const short=hits.filter(h=>h.dur>=20 && h.dur<=120);
+  const rest=hits.filter(h=>!(h.dur>=20 && h.dur<=120));
+  const ids=[];
+  [...short, ...rest].forEach(h=>{ if(h.id&&!ids.includes(h.id)) ids.push(h.id); });
+  return ids.filter(id=>/^[\w-]{11}$/.test(id)&&!/^[0_]{11}$/.test(id)).slice(0,16);
 }
 function embedIframe(id){
   const box=document.getElementById('ytframe');
@@ -891,14 +903,13 @@ async function showVideo(title, kind){
   if(link) link.href=id?('https://www.youtube.com/watch?v='+id):search;
   if(id){
     usedVids.add(id);
-    ytIds=ids.filter(x=>!usedVids.has(x)||x===id); ytI=0;
+    ytIds=ids; ytI=0;
     mountYt(id);
     clearTimeout(window.__briefT);
     window.__briefT=setTimeout(runBrief, 90000);
     return;
   }
-  if(ytPlayer) return;
-  box.innerHTML='<p style="padding:12px;color:#d8c0f0">No unused clip. <a href="'+search+'" target="_blank" rel="noopener">Open YouTube ↗</a></p>';
+  box.innerHTML='<p style="padding:12px;color:#d8c0f0">Hunting another clip… <a href="'+search+'" target="_blank" rel="noopener">YouTube ↗</a></p>';
 }
 function boardBrief(title, body){
   const t=(title+' '+body).toLowerCase();
@@ -1025,7 +1036,7 @@ async function ingestFeatured(d){
 
 async function ingestHN(){
   try{
-    const ids=(await fetch('https://hacker-news.firebaseio.com/v0/topstories.json').then(r=>r.json())).slice(0,8);
+    const ids=(await fetch('https://hacker-news.firebaseio.com/v0/topstories.json').then(r=>r.json())).slice(0,25);
     const items=await Promise.all(ids.map(id=>fetch('https://hacker-news.firebaseio.com/v0/item/'+id+'.json').then(r=>r.json())));
     items.forEach(it=>{ if(it&&it.title) pushStory(it.title, it.title+'. Ranked live discussion.', it.score||0); });
   }catch(e){}
@@ -1334,27 +1345,47 @@ async function playStory(){
     await loadToday();
     st=liveStories.find(s=>!seen.has(s.title));
   }
-  if(!st){ say('Caught up. New pack in a minute.'); return; }
+  if(!st && liveStories.length){
+    st=liveStories[playI%liveStories.length];
+    playI++;
+  }
+  if(!st){ say('Feeds empty — retry in a few seconds.'); await loadToday(); return; }
   showPinShell(st.title);
   await openStory(st);
 }
+let playI=0;
 document.getElementById('bNow').onclick=()=>playStory();
 const MEME_Q=[
-  'funny meme compilation 2026',
-  'dank memes today',
-  'best memes this week',
+  'funny meme compilation short',
+  'dank memes today short',
+  'best memes this week shorts',
   'vine boom meme',
-  'shitpost meme video',
-  'internet memes short funny'
+  'reddit memes compilation',
+  'tiktok meme compilation funny',
+  'shitpost meme short'
 ];
 let memeI=0;
+const memeBank=[];
+async function pumpMemes(){
+  const q=MEME_Q[memeI++%MEME_Q.length];
+  const ids=await findYtIds(q);
+  ids.forEach(id=>{ if(!usedVids.has(id) && memeBank.indexOf(id)<0) memeBank.push(id); });
+}
 const bMeme=document.getElementById('bMeme');
 if(bMeme) bMeme.onclick=async()=>{
-  const q=MEME_Q[memeI++%MEME_Q.length];
-  say('TOP MEMES · '+q);
+  say('TOP MEMES');
   showPinShell('MEME');
+  if(memeBank.length){
+    const id=memeBank.shift();
+    usedVids.add(id);
+    mountYt(id);
+    return;
+  }
+  const q=MEME_Q[memeI++%MEME_Q.length];
   await showVideo(q, 'meme');
 };
+pumpMemes();
+setInterval(pumpMemes, 30000);
 async function openStory(st){
   if(!st){ say('Caught up. New headlines arrive every minute.'); return; }
   seen.add(st.title); seenSave();
