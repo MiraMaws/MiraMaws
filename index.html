@@ -271,7 +271,7 @@
   <div class="mrow"><span>Quakes</span><b id="mQ">…</b></div>
   <p id="sync">sync —</p>
   <button class="item" id="bDay" type="button">TODAY</button>
-  <button class="item" id="bRadio" type="button">RADIO · NASA</button>
+  <button class="item" id="bRadio" type="button">RADIO · ON</button>
   <h2>MARKETS</h2>
   <div id="mkts"></div>
   <div class="srcs">
@@ -570,7 +570,7 @@ window.onYouTubeIframeAPIReady=function(){ window.__ytReady=true; };
 function waitYt(){
   return new Promise(res=>{
     if(window.YT && YT.Player) return res();
-    let n=0; const t=setInterval(()=>{ if((window.YT&&YT.Player)||n++>40){ clearInterval(t); res(); } },100);
+    let n=0; const t=setInterval(()=>{ if((window.YT&&YT.Player)||n++>80){ clearInterval(t); res(); } },100);
   });
 }
 function ytCmd(fn){
@@ -637,26 +637,30 @@ function mountYt(id){
     }
   });
 }
+let ytSeq=0;
 async function showVideo(title){
+  const seq=++ytSeq;
   videoOn=true;
   hushDesk();
   const wrap=document.getElementById('ytwrap');
   const box=document.getElementById('ytframe');
   wrap.style.display='block';
-  box.textContent='Finding the video…';
+  if(!ytPlayer) box.textContent='Finding the video…';
   await waitYt();
-  ytIds=await findYtIds(title);
-  ytI=0;
-  const id=ytIds[0];
-  const search='https://www.youtube.com/results?search_query='+encodeURIComponent(title+' news');
+  const ids=await findYtIds(title);
+  if(seq!==ytSeq) return;
+  const id=ids[0];
+  const search='https://www.youtube.com/results?search_query='+encodeURIComponent((title||'world news')+' news');
   document.getElementById('ytlink').href=id?('https://www.youtube.com/watch?v='+id):search;
-  if(!id || !(window.YT&&YT.Player)){
-    box.innerHTML='<p style="padding:12px;color:#9ab">No video ID yet. Open YouTube ↗ then we can lock the watch link.</p>';
+  if(id && window.YT && YT.Player){
+    ytIds=ids; ytI=0;
+    mountYt(id);
+    clearTimeout(window.__briefT);
+    window.__briefT=setTimeout(runBrief, 90000);
     return;
   }
-  mountYt(id);
-  clearTimeout(window.__briefT);
-  window.__briefT=setTimeout(runBrief, 90000);
+  if(ytPlayer) return;
+  box.innerHTML='<p style="padding:12px;color:#d8c0f0">Still hunting a watch link. Try Upcoming, or YouTube ↗</p>';
 }
 function boardBrief(title, body){
   const t=(title+' '+body).toLowerCase();
@@ -677,12 +681,14 @@ function boardBrief(title, body){
   ].join('\n');
 }
 function runBrief(){
+  videoOn=false;
   const el=document.getElementById('brief');
-  if(!el) return;
-  el.style.display='block';
-  el.textContent='';
-  el.innerHTML=boardBrief(lastEvent.title, lastEvent.extra).replace(/\n/g,'<br>');
-  resumeChatter();
+  if(el){
+    el.style.display='block';
+    el.textContent='';
+    el.innerHTML=boardBrief(lastEvent.title, lastEvent.extra).replace(/\n/g,'<br>');
+  }
+  if(radioOn) resumeChatter();
 }
 
 function seenLoad(){ try{ return new Set(JSON.parse(localStorage.getItem('ww_seen')||'[]')); }catch(e){ return new Set(); } }
@@ -928,7 +934,7 @@ window.addEventListener('message',ev=>{
     if(d && (d.event==='onStateChange'||d.info===0) && d.info===0) runBrief();
   }catch(e){}
 });
-let radioOn=false;
+let radioOn=true;
 const bRadio=document.getElementById('bRadio');
 if(bRadio) bRadio.onclick=()=>{ radioOn=!radioOn; if(radioOn) resumeChatter(); else pauseChatter(); bRadio.textContent=radioOn?'RADIO · ON':'RADIO · NASA'; };
 
@@ -947,10 +953,11 @@ function armChatter(){
   radioOn=true;
   if(bRadio) bRadio.textContent='RADIO · ON';
   resumeChatter();
-  document.removeEventListener('pointerdown', armChatter);
 }
-document.addEventListener('pointerdown', armChatter);
+document.addEventListener('pointerdown', armChatter, {once:true});
 if(chatter){ chatter.loop=true; chatter.volume=0.08; }
+resumeChatter();
+setInterval(()=>{ if(radioOn && !videoOn && chatter && chatter.paused) resumeChatter(); }, 4000);
 const miraBox=document.getElementById('mira');
 if(miraBox) miraBox.onclick=()=>{
   if(videoOn) return;
@@ -1022,15 +1029,17 @@ async function openStory(st){
 }
 function nextFresh(){ return liveStories.find(s=>!seen.has(s.title))||null; }
 function showStory(){ return openStory(nextFresh()); }
+let playI=0;
+async function playStory(step){
+  if(!liveStories.length) await loadToday();
+  if(!liveStories.length){ say('No headline yet.'); return; }
+  if(step) playI=(playI+1)%liveStories.length;
+  else if(playI>=liveStories.length) playI=0;
+  await openStory(liveStories[playI]);
+}
 document.getElementById('bPop').onclick=()=>say('World population (modeled UN-range clock): '+popStr(worldPop())+'. Not a census office.');
-document.getElementById('bNow').onclick=async()=>{
-  if(!liveStories.some(s=>!seen.has(s.title))) await loadToday();
-  await showStory();
-};
-document.getElementById('bNext').onclick=async()=>{
-  if(!liveStories.some(s=>!seen.has(s.title))) await loadToday();
-  await showStory();
-};
+document.getElementById('bNow').onclick=()=>playStory(false);
+document.getElementById('bNext').onclick=()=>playStory(true);
 setInterval(()=>{
   document.getElementById('popN').textContent=popStr(worldPop());
   document.getElementById('timeN').textContent=utcStr();
