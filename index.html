@@ -2,316 +2,97 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=1920, initial-scale=1"/>
-<title>White Wings — New Earth Desk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>White Wings</title>
 <style>
-  :root { --g:#c9a227; --bg:#050508; --p:#101016; --ink:#ece6dc; --d:#7a7480; --w:1920px; --h:1080px; }
+  :root { --g:#c9a227; --ink:#ece6dc; --d:#8a8490; }
   * { box-sizing:border-box; margin:0; }
-  html,body { width:100%; height:100%; background:#000; overflow:hidden; color:var(--ink); font-family:system-ui,sans-serif; }
-  #desk { width:var(--w); height:var(--h); position:relative; margin:0 auto; background:var(--bg); transform-origin:top center; }
-  canvas#stars { position:absolute; inset:0; }
-  /* center world */
-  #center { position:absolute; left:50%; top:50%; width:520px; height:520px; margin:-260px 0 0 -260px; }
-  .ring { position:absolute; inset:0; border-radius:50%; border:14px solid #2a1e10;
-    box-shadow:0 0 0 2px var(--g), inset 0 0 40px #c9a22733; animation:spin 48s linear infinite; }
-  .ring::after { content:""; position:absolute; width:26px; height:26px; background:var(--g); border-radius:50% 0 50% 50%;
-    top:-6px; left:50%; transform:translateX(-50%) rotate(45deg); box-shadow:0 0 14px var(--g); }
-  .earth { position:absolute; inset:15%; border-radius:50%; overflow:hidden;
-    background:radial-gradient(circle at 32% 28%, #8ec8ff, #1a4a8a 42%, #0a2040);
-    box-shadow:inset -28px -18px 48px #0008; }
-  .earth .land { position:absolute; inset:-20%;
-    background:repeating-linear-gradient(110deg, transparent 0 18px, #2f7a4a88 18px 34px, transparent 34px 50px);
-    animation:drift 36s linear infinite; }
-  #paimon { position:absolute; width:12px; height:12px; background:#e8c96a; border-radius:50%;
-    left:50%; top:50%; margin:-6px; box-shadow:0 0 10px #e8c96a; animation:orbit 22s linear infinite; }
+  html,body { height:100%; background:#07070b; color:var(--ink); font-family:system-ui,sans-serif; }
+  canvas { position:fixed; inset:0; }
+  #ui { position:relative; z-index:2; max-width:420px; margin:0 auto; padding:8vh 1.2rem 3rem; text-align:center; }
+  h1 { font-weight:500; letter-spacing:.42em; font-size:.78rem; color:var(--g); }
+  p.hint { color:var(--d); font-size:.92rem; margin:1rem 0 1.4rem; line-height:1.45; }
+  .ring { width:220px; height:220px; margin:0 auto 1.2rem; border-radius:50%;
+    border:10px solid #2a1e10; box-shadow:0 0 0 1px var(--g), 0 0 40px #c9a22733;
+    position:relative; animation:spin 48s linear infinite; }
+  .earth { position:absolute; inset:12%; border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, #8ec8ff, #1a4a8a 50%, #0a2040); }
   @keyframes spin { to { transform:rotate(360deg); } }
-  @keyframes drift { to { transform:translateX(-18%); } }
-  @keyframes orbit { from { transform:rotate(0) translateX(250px); } to { transform:rotate(360deg) translateX(250px); } }
-  #hekate { position:absolute; top:28px; left:0; right:0; text-align:center; letter-spacing:.32em; font-size:13px; color:var(--g); }
-  #next { position:absolute; bottom:28px; left:50%; transform:translateX(-50%); padding:10px 22px;
-    border:1px solid var(--g); border-radius:999px; color:var(--g); background:#0a0a10cc; z-index:5; }
-  /* arrow tabs */
-  .tab { position:absolute; z-index:20; background:#14141c; border:1px solid #2a2430; color:var(--g);
-    cursor:pointer; letter-spacing:.08em; font-size:12px; }
-  .tab.on { background:#1c1810; border-color:var(--g); }
-  .panel { position:absolute; background:#0c0c12f2; border:1px solid #2a2430; z-index:10; padding:16px;
-    transition:transform .28s ease; }
-  .x { float:right; cursor:pointer; color:var(--g); border:1px solid #2a2430; background:#14141c;
-    width:28px; height:28px; border-radius:8px; padding:0; margin:-4px 0 8px 8px; text-align:center; }
-  .tab:hover { border-color:var(--g); }
-  #tL { left:0; top:50%; transform:translateY(-50%); padding:40px 8px; border-radius:0 10px 10px 0; }
-  #tR { right:0; top:50%; transform:translateY(-50%); padding:40px 8px; border-radius:10px 0 0 10px; }
-  #tB { bottom:0; left:50%; transform:translateX(-50%); padding:6px 40px; border-radius:10px 10px 0 0; }
-  /* panels */
-  .panel { position:absolute; background:#0c0c12f2; border:1px solid #2a2430; z-index:7; padding:16px;
-    transition:transform .28s ease; }
-  .panel h2 { font-size:13px; letter-spacing:.16em; color:var(--g); margin-bottom:10px; }
-  #pL { left:0; top:80px; bottom:80px; width:340px; transform:translateX(-100%); }
-  #pL.on { transform:none; }
-  #pR { right:0; top:80px; bottom:80px; width:360px; transform:translateX(100%); }
-  #pR.on { transform:none; }
-  #pB { left:160px; right:160px; bottom:0; height:280px; transform:translateY(100%); }
-  .board { display:flex; gap:8px; margin-top:8px; height:140px; }
-  .col { flex:1; background:#14141c; border-radius:8px; padding:6px; overflow:auto; }
-  .col h3 { font-size:10px; letter-spacing:.12em; color:var(--g); margin-bottom:4px; }
-  .card { font-size:11px; background:#0c0c12; border:1px solid #2a2430; border-radius:6px; padding:4px 6px; margin:4px 0; }
-  #pB.on { transform:none; }
-  button { width:100%; text-align:left; margin:5px 0; padding:10px 12px; border-radius:10px;
-    border:1px solid #2a2430; background:#14141c; color:var(--ink); font:inherit; cursor:pointer; }
-  button.go { border-color:var(--g); }
-  button:disabled { opacity:.35; }
-  button small { display:block; color:var(--d); font-size:11px; }
-  .statrow { display:flex; gap:8px; margin-bottom:10px; }
-  .stat { flex:1; background:#14141c; border-radius:8px; padding:6px 8px; }
-  .stat b { display:block; font-size:16px; }
-  .stat span { font-size:10px; color:var(--d); text-transform:uppercase; }
-  #orb { width:88px; height:88px; margin:8px auto; border-radius:50%; cursor:pointer;
+  #orb { width:96px; height:96px; margin:0 auto .8rem; border-radius:50%; border:0; cursor:pointer;
     background:radial-gradient(circle at 35% 30%, #f2e2a8, #8a6a20 55%, #1a1408);
-    box-shadow:0 0 24px #c9a22766; display:grid; place-items:center; color:#1a1408; font-weight:700; }
-  .bar { height:6px; background:#111; border-radius:6px; overflow:hidden; margin:6px 0 10px; }
+    box-shadow:0 0 28px #c9a22766; color:#1a1408; font-weight:700; letter-spacing:.1em; }
+  #orb:active { transform:scale(.94); }
+  .row { display:flex; gap:8px; margin:1rem 0; }
+  .stat { flex:1; background:#101016; border-radius:10px; padding:.5rem; }
+  .stat b { display:block; font-size:1.15rem; }
+  .stat span { font-size:.65rem; color:var(--d); text-transform:uppercase; }
+  .bar { height:6px; background:#111; border-radius:6px; overflow:hidden; margin:.4rem 0 1rem; }
   .bar i { display:block; height:100%; width:0; background:var(--g); }
-  #log { font-size:13px; color:#b8b0c0; min-height:2.2em; }
-  #addr { font-size:12px; color:#9aa3b2; margin-top:8px; }
-  input { width:100%; background:#121218; color:var(--ink); border:1px solid #2a2430; border-radius:8px; padding:6px 8px; }
+  button.buy { width:100%; text-align:left; margin:.3rem 0; padding:.7rem .85rem; border-radius:12px;
+    border:1px solid #2a2430; background:#101016; color:var(--ink); font:inherit; cursor:pointer; }
+  button.buy.go { border-color:var(--g); }
+  button.buy:disabled { opacity:.35; }
+  button.buy small { display:block; color:var(--d); }
+  #say { min-height:2.4em; color:#b8b0c0; font-size:.88rem; }
 </style>
 </head>
 <body>
-<div id="desk">
-  <canvas id="stars"></canvas>
-  <div id="hekate">NEW EARTH · HEKATE · 岐</div>
-  <div id="center">
-    <div class="ring"></div>
-    <div class="earth"><div class="land"></div></div>
-    <div id="paimon"></div>
+<canvas id="stars"></canvas>
+<div id="ui">
+  <h1>WHITE WINGS</h1>
+  <p class="hint">Click the gold circle. When a button lights up, press it. That’s the whole game.</p>
+  <div class="ring"><div class="earth"></div></div>
+  <button id="orb" type="button">CLICK</button>
+  <div class="row">
+    <div class="stat"><span>Light</span><b id="lum">0</b></div>
+    <div class="stat"><span>Each second</span><b id="lps">0</b></div>
+    <div class="stat"><span>Level</span><b id="lvl">1</b></div>
   </div>
-  <div id="next">1 · Click ▶ PLAY or the gold circle</div>
-  <div class="tab" id="tL">◀ BANK</div>
-  <div class="tab" id="tR">GODS ▶</div>
-  <div class="tab" id="tB">▲ MAP</div>
-  <aside class="panel" id="pL">
-    <h2>BANK OF HELL</h2>
-    <button class="x" id="xL" type="button">✕</button>
-    <div class="statrow">
-      <div class="stat"><span>Vault Lumen</span><b id="lum">0</b></div>
-      <div class="stat"><span>/sec (never ↓)</span><b id="lps">0</b></div>
-      <div class="stat"><span>Lv</span><b id="lvl">1</b></div>
-    </div>
-    <div class="statrow">
-      <div class="stat"><span>Lifetime</span><b id="life">0</b></div>
-      <div class="stat"><span>Floor /sec</span><b id="floor">0</b></div>
-    </div>
-    <div id="orb">CLICK</div>
-    <div class="bar"><i id="xpbar"></i></div>
-    <p id="log">Cause → effect.</p>
-    <button id="bAuto"><b>Buy Auto</b><small>Money while you wait</small></button>
-    <button id="bClick"><b>Stronger Click</b><small>More per click</small></button>
-    <button id="bMolt"><b>Molt</b><small>Lv 8: reset, keep bonus</small></button>
-  </aside>
-  <aside class="panel" id="pR">
-    <h2>GODS</h2>
-    <button class="x" id="xR" type="button">✕</button>
-    <p id="god" style="min-height:5em;line-height:1.45;color:#c4b8c8;font-size:13px">Hekate names the hinge.</p>
-    <p id="lesson" style="font-size:12px;color:#9aa3b2;min-height:3.4em;margin:8px 0">Earth study loads…</p>
-    <button data-q="stuck">Ask Hekate</button>
-    <button data-q="grow">Board</button>
-    <button data-q="humor">Paimon</button>
-    <button data-q="auto" id="bAutoGods">Auto-grow: ON</button>
-    <input id="tok" type="password" placeholder="GitHub PAT (stored unpublished)"/>
-    <button id="bSaveTok" type="button"><b>Save token</b><small>Amun-Ra vault · not the repo</small></button>
-    <button id="bPub" type="button"><b>Publish to miramaws.com</b><small>Needs Contents: write</small></button>
-    <p id="pubmsg" style="font-size:12px;color:#9aa3b2;min-height:2em"></p>
-  </aside>
-  <aside class="panel" id="pB">
-    <h2>MAP · 999,999,999 cells</h2>
-    <button class="x" id="xB" type="button">✕</button>
-    <div id="addr">L—</div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <input id="jump" type="number" min="0" max="999999998" placeholder="layer id"/>
-      <button id="go" style="width:auto">Go</button>
-      <button id="rnd" style="width:auto">Random</button>
-    </div>
-    <div class="board" id="board"></div>
-  </aside>
+  <div class="bar"><i id="xp"></i></div>
+  <p id="say">A quiet start.</p>
+  <button class="buy" id="bAuto" type="button"><b>Collect while away</b><small>Costs 15</small></button>
+  <button class="buy" id="bClick" type="button"><b>Stronger click</b><small>Costs 20</small></button>
 </div>
 <script>
-/* fit 1920x1080 to window */
-function fit(){
-  const s=Math.min(innerWidth/1920, innerHeight/1080);
-  document.getElementById('desk').style.transform='scale('+s+')';
-}
-addEventListener('resize',fit); fit();
-/* stars */
 const c=document.getElementById('stars'),x=c.getContext('2d');
-c.width=1920; c.height=1080;
-const stars=[...Array(180)].map(()=>({x:Math.random()*1920,y:Math.random()*1080,z:Math.random()*1.5+.2}));
-(function draw(){ x.fillStyle='#050508'; x.fillRect(0,0,1920,1080);
-  stars.forEach(s=>{ s.y+=s.z*.12; if(s.y>1080)s.y=0; x.fillStyle=`rgba(232,228,220,${.2+s.z*.5})`; x.fillRect(s.x,s.y,s.z,s.z); });
-  requestAnimationFrame(draw); })();
-/* panels */
-const on={pL:0,pR:0,pB:0};
-const tabLab={pL:['◀ BANK','BANK ▶'],pR:['◀ GODS','GODS ▶'],pB:['▼ MAP','▲ MAP']};
-function paintTabs(){
-  document.getElementById('tL').textContent=on.pL?tabLab.pL[0]:'◀ BANK';
-  document.getElementById('tR').textContent=on.pR?tabLab.pR[0]:'GODS ▶';
-  document.getElementById('tB').textContent=on.pB?'▼ MAP':'▲ MAP';
-  document.getElementById('tL').classList.toggle('on',!!on.pL);
-  document.getElementById('tR').classList.toggle('on',!!on.pR);
-  document.getElementById('tB').classList.toggle('on',!!on.pB);
-}
-function setPanel(id, open){
-  on[id]=open?1:0;
-  document.getElementById(id).classList.toggle('on', !!on[id]);
-  paintTabs();
-  try{ localStorage.setItem('ww_panels', JSON.stringify(on)); }catch(e){}
-}
-function tog(id){ setPanel(id, !on[id]); }
-document.getElementById('tL').onclick=()=>tog('pL');
-document.getElementById('tR').onclick=()=>tog('pR');
-document.getElementById('tB').onclick=()=>tog('pB');
-document.getElementById('xL').onclick=()=>setPanel('pL',0);
-document.getElementById('xR').onclick=()=>setPanel('pR',0);
-document.getElementById('xB').onclick=()=>setPanel('pB',0);
-try{ const p=JSON.parse(localStorage.getItem('ww_panels')||'');
-  if(p){ ['pL','pR','pB'].forEach(k=> setPanel(k, !!p[k])); }
-}catch(e){}
-paintTabs();
-/* ops — same save key */
-function load(){ try{return JSON.parse(localStorage.getItem('ww_ops')||'');}catch(e){return null;} }
-const s=Object.assign({lumen:0,life:0,clicks:0,xp:0,level:1,auto:0,click:0,band:0,feather:0,clerk:0,molts:0,floorLps:0,studied:0,t:Date.now(),achs:{}},load()||{});
-function lpsRaw(){ return (s.auto*0.4)*(1+(s.molts||0)*0.25); }
-function lps(){ const v=lpsRaw(); if(v>s.floorLps) s.floorLps=v; return Math.max(v, s.floorLps||0); }
-function save(){
-  s.t=Date.now();
-  s.life=Math.max(s.life||0, s.lumen);
-  if(lpsRaw()>s.floorLps) s.floorLps=lpsRaw();
-  localStorage.setItem('ww_ops',JSON.stringify(s));
-  try{ if(window.pywebview&&pywebview.api&&pywebview.api.save_ops) pywebview.api.save_ops(JSON.stringify(s)); }catch(e){}
-}
+function size(){ c.width=innerWidth; c.height=innerHeight; }
+addEventListener('resize',size); size();
+const stars=[...Array(120)].map(()=>({x:Math.random(),y:Math.random(),z:Math.random()*1.4+.2}));
+(function draw(){
+  x.fillStyle='#07070b'; x.fillRect(0,0,c.width,c.height);
+  stars.forEach(s=>{ s.y+=s.z*.00015; if(s.y>1)s.y=0;
+    x.fillStyle=`rgba(232,228,220,${.2+s.z*.45})`;
+    x.fillRect(s.x*c.width,s.y*c.height,s.z,s.z);
+  });
+  requestAnimationFrame(draw);
+})();
+function load(){ try{return JSON.parse(localStorage.getItem('ww_public')||'');}catch(e){return null;} }
+const s=Object.assign({lumen:0,clicks:0,xp:0,level:1,auto:0,click:0,t:Date.now()},load()||{});
+function save(){ s.t=Date.now(); localStorage.setItem('ww_public',JSON.stringify(s)); }
 function cost(b,lv){ return Math.max(1,Math.floor(b*Math.pow(1.18,lv))); }
-function bonus(){ return 1+(s.molts||0)*0.25; }
-function clickPow(){ return (1+s.click)*bonus(); }
-function xpNeed(){ return 20+s.level*15; }
+function pow(){ return 1+s.click; }
+function lps(){ return s.auto*0.4; }
+function need(){ return 20+s.level*15; }
 function fmt(n){ return n>=1000?n.toFixed(1):Math.floor(n*10)/10; }
-function say(t){ document.getElementById('log').textContent=t; }
-function addXp(n){ s.xp+=n; while(s.xp>=xpNeed()){ s.xp-=xpNeed(); s.level++; say('Level '+s.level); } }
-function hint(){
-  if(s.clicks<2) return '1 · Open ▶ PLAY · click the gold circle';
-  if(s.lumen>=cost(15,s.auto)) return '2 · Buy Auto (it’s lit)';
-  if(s.level>=8) return '3 · Molt — keep a bonus';
-  return 'Click. Buy when gold.';
-}
+function say(t){ document.getElementById('say').textContent=t; }
 function render(){
   document.getElementById('lum').textContent=fmt(s.lumen);
   document.getElementById('lps').textContent=fmt(lps());
   document.getElementById('lvl').textContent=s.level;
-  document.getElementById('life').textContent=fmt(Math.max(s.life||0,s.lumen));
-  document.getElementById('floor').textContent=fmt(s.floorLps||0);
-  document.getElementById('xpbar').style.width=Math.min(100,s.xp/xpNeed()*100)+'%';
-  const a=document.getElementById('bAuto'), k=document.getElementById('bClick'), m=document.getElementById('bMolt');
-  a.disabled=s.lumen<cost(15,s.auto); k.disabled=s.lumen<cost(20,s.click); m.disabled=s.level<8;
-  a.classList.toggle('go', !a.disabled); k.classList.toggle('go', !k.disabled);
-  document.getElementById('next').textContent=hint();
+  document.getElementById('xp').style.width=Math.min(100,s.xp/need()*100)+'%';
+  const a=document.getElementById('bAuto'), k=document.getElementById('bClick');
+  a.disabled=s.lumen<cost(15,s.auto); k.disabled=s.lumen<cost(20,s.click);
+  a.classList.toggle('go',!a.disabled); k.classList.toggle('go',!k.disabled);
+  a.querySelector('small').textContent='Costs '+cost(15,s.auto);
+  k.querySelector('small').textContent='Costs '+cost(20,s.click);
 }
-document.getElementById('orb').onclick=()=>{ s.lumen+=clickPow(); s.clicks++; addXp(1); save(); render(); };
-document.getElementById('bAuto').onclick=()=>{ if(s.lumen<cost(15,s.auto))return; s.lumen-=cost(15,s.auto); s.auto++; save(); render(); };
-document.getElementById('bClick').onclick=()=>{ if(s.lumen<cost(20,s.click))return; s.lumen-=cost(20,s.click); s.click++; save(); render(); };
-document.getElementById('bMolt').onclick=()=>{ if(s.level<8)return; s.molts++; s.xp=0; s.level=1; say('Molt. Mining floor kept.'); save(); render(); };
-setInterval(()=>{ s.lumen+=lps(); if(lps()>0) addXp(0.05); save(); render(); },1000);
+function addXp(n){ s.xp+=n; while(s.xp>=need()){ s.xp-=need(); s.level++; say('Level '+s.level); } }
+document.getElementById('orb').onclick=()=>{ s.lumen+=pow(); s.clicks++; addXp(1); save(); render(); };
+document.getElementById('bAuto').onclick=()=>{ const c=cost(15,s.auto); if(s.lumen<c)return; s.lumen-=c; s.auto++; save(); render(); };
+document.getElementById('bClick').onclick=()=>{ const c=cost(20,s.click); if(s.lumen<c)return; s.lumen-=c; s.click++; save(); render(); };
+(function(){ const dt=Math.min(8*3600,(Date.now()-(s.t||Date.now()))/1000); const g=lps()*dt; if(g>1){ s.lumen+=g; say('While away +'+fmt(g)); }})();
+setInterval(()=>{ s.lumen+=lps(); if(lps()>0) addXp(0.04); save(); render(); },1000);
 render();
-/* gods — local lines (instant, no python) */
-const G={
-  stuck:'HEKATE: Stand. Pick the hinge, not a face.\nPAIMON: I’ll whisper. (He will not.)',
-  grow:'ASTARTE: Deepen a vow.\nAMUN-RA: Don’t advertise it.\nMAAT: Keep ΔSelf slightly nonzero.',
-  humor:'PAIMON: The band is already lost. That’s the map.',
-  auto:'Gods on a timer. They grow the log, not your wallet — treasury is not connected.'
-};
-let autoGods=true;
-const ticks=['ANUBIS files a leftover line.','TUT restores one retired name.','AMUN-RA hides the save.','MAAT tilts the feather.','PAIMON announces nothing useful, which is useful.'];
-document.querySelectorAll('#pR [data-q]').forEach(b=>b.onclick=()=>{
-  if(b.dataset.q==='auto'){ autoGods=!autoGods; b.textContent='Auto-grow: '+(autoGods?'ON':'OFF'); }
-  document.getElementById('god').textContent=G[b.dataset.q]||ticks[0];
-});
-setInterval(()=>{
-  if(!autoGods) return;
-  document.getElementById('god').textContent=ticks[Math.floor(Date.now()/8000)%ticks.length];
-},8000);
-let LESSONS=[];
-function showLesson(){
-  if(!LESSONS.length) return;
-  const i=(s.studied||0)%LESSONS.length;
-  const L=LESSONS[i];
-  document.getElementById('lesson').textContent=L.god+': '+L.line;
-}
-fetch('earth_lessons.json').then(r=>r.json()).then(d=>{
-  LESSONS=d.lessons||[];
-  showLesson();
-}).catch(()=>{ document.getElementById('lesson').textContent='Run earth_study.py to mint lessons.'; });
-document.getElementById('bSaveTok').onclick=async()=>{
-  const t=document.getElementById('tok').value.trim();
-  const m=document.getElementById('pubmsg');
-  if(!t){ m.textContent='Paste a token first.'; return; }
-  try{
-    if(window.pywebview&&pywebview.api&&pywebview.api.save_token){
-      m.textContent=await pywebview.api.save_token(t);
-    }else{
-      localStorage.setItem('ww_gh', t);
-      m.textContent='Saved in this browser (exe vault preferred).';
-    }
-  }catch(e){ m.textContent=String(e); }
-};
-document.getElementById('bPub').onclick=async()=>{
-  const m=document.getElementById('pubmsg');
-  m.textContent='Publishing…';
-  try{
-    if(window.pywebview&&pywebview.api&&pywebview.api.publish){
-      m.textContent='Result '+await pywebview.api.publish();
-      return;
-    }
-    m.textContent='Open WhiteWings.exe to publish, or run 09_EXE/publish_site.py';
-  }catch(e){ m.textContent=String(e); }
-};
-document.getElementById('orb').addEventListener('click',()=>{
-  s.studied=(s.studied||0)+1; showLesson();
-});
-addEventListener('beforeunload', save);
-addEventListener('pagehide', save);
-/* map */
-const APEX=999999999,ESP=111111111,HSP=12345679;
-const EARTHS=["Clay","Glass","Salt","Iron","Green","Violet","Gold","Ash","Wing"];
-const HOUSES=["Persona","Shadow","Anima","Animus","Complex","Trickster","Senex","Puer","SelfGlimpse"];
-function resolve(id){
-  id=((id%APEX)+APEX)%APEX;
-  const earth=Math.floor(id/ESP), rem=id%ESP, house=Math.floor(rem/HSP), plot=rem%HSP;
-  return `L${id} · Earth ${EARTHS[earth]} · House ${HOUSES[house]} · Plot ${plot}`;
-}
-document.getElementById('go').onclick=()=>{
-  const id=+document.getElementById('jump').value||0;
-  document.getElementById('addr').textContent=resolve(id);
-  s.lastLayer=id; save();
-};
-document.getElementById('rnd').onclick=()=>{
-  const id=Math.floor(Math.random()*APEX);
-  document.getElementById('jump').value=id;
-  document.getElementById('addr').textContent=resolve(id);
-  s.lastLayer=id; save();
-};
-{ const id=(s.lastLayer!=null)?s.lastLayer:865179131;
-  document.getElementById('jump').value=id;
-  document.getElementById('addr').textContent=resolve(id); }
-fetch('kanban.json').then(r=>r.json()).then(k=>{
-  const names={backlog:'BACKLOG',doing:'DOING',review:'REVIEW',done:'DONE'};
-  const el=document.getElementById('board');
-  el.innerHTML=(k.columns||[]).map(c=>{
-    const cards=(k.cards||[]).filter(x=>x.col===c).map(x=>'<div class="card">'+x.title+' <span style="color:#666">'+x.owner+'</span></div>').join('');
-    return '<div class="col"><h3>'+(names[c]||c)+'</h3>'+cards+'</div>';
-  }).join('');
-}).catch(()=>{});
-fetch('holo_memory.jsonl').then(r=>r.text()).then(t=>{
-  const last=t.trim().split('\n').slice(-1)[0];
-  if(last && document.getElementById('lesson')){
-    try{ const j=JSON.parse(last); /* keep */ }catch(e){}
-  }
-}).catch(()=>{});
 </script>
 </body>
 </html>
