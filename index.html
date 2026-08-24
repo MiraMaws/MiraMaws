@@ -86,11 +86,21 @@
   .ev b { display:block; font-size:11px; color:#ff9adf; }
   .ev span { font-size:10px; color:var(--d); }
   #pin { position:fixed; top:12px; right:12px; left:auto; bottom:auto; z-index:9;
-    width:min(480px,46vw); height:auto; min-width:280px; min-height:180px;
+    --ps:1;
+    width:min(560px,52vw); height:auto; min-width:280px; min-height:180px;
     display:none; padding:10px 12px 14px; overflow:hidden;
-    display:none; flex-direction:column;
-    transform:none; opacity:0; }
+    flex-direction:column; transform:none; opacity:0; }
   #pin.on { display:flex; opacity:1; }
+  .pinBody { display:flex; flex:1; min-height:0; gap:8px; }
+  .pinMain { flex:1; min-width:0; display:flex; flex-direction:column; }
+  #ytComments { width:calc(150px * var(--ps)); min-width:120px; max-width:280px; overflow:auto;
+    border-left:1px solid #c44dff55; padding:0 0 0 8px; font-size:calc(10px * var(--ps)); color:#d8c0f0; }
+  #ytComments h4 { font-size:calc(9px * var(--ps)); letter-spacing:.14em; color:#ff9adf; margin:0 0 6px; }
+  #ytComments li { margin:0 0 8px; line-height:1.35; }
+  #pin .ytctl button, #pin .ytctl a, #advisors button {
+    font-size:calc(10px * var(--ps)); padding:calc(5px * var(--ps)) calc(6px * var(--ps)); }
+  #pin h3 { font-size:calc(14px * var(--ps)); }
+  .pinDrag { cursor:move; }
   #pin.theatre { max-width:none; max-height:none; }
   #ytwrap { flex:1; min-height:160px; display:flex; flex-direction:column; }
   #ytframe { flex:1; min-height:160px; }
@@ -287,9 +297,11 @@
   <span class="rz se" data-dir="se"></span>
   <span class="rz sw" data-dir="sw"></span>
   <button id="pinX" type="button">✕</button>
-  <h3 id="pinT"></h3>
-  <div class="liveban"><i></i> LIVE NEWS</div>
-  <div class="meta" id="pinM"></div>
+  <div class="pinBody">
+  <div class="pinMain">
+  <h3 id="pinT" class="pinDrag"></h3>
+  <div class="liveban pinDrag"><i></i> LIVE NEWS</div>
+  <div class="meta pinDrag" id="pinM"></div>
   <p id="pinB" style="line-height:1.5;max-height:5.5em;overflow:auto;white-space:pre-wrap"></p>
   <div id="ytwrap" style="display:none;margin-top:8px;background:#000;border:1px solid #3a1458">
     <div id="ytframe" style="min-height:200px;aspect-ratio:16/9"></div>
@@ -327,6 +339,12 @@
     <button type="button" data-ask="board">Board</button>
   </div>
   <div id="brief"></div>
+  </div>
+  <aside id="ytComments">
+    <h4>TOP 5 COMMENTS</h4>
+    <ol id="ytcList"><li>Play a clip.</li></ol>
+  </aside>
+  </div>
 </div>
 <button class="tog" id="tL" type="button">‹</button>
 <button class="tog" id="tR" type="button">›</button>
@@ -400,7 +418,9 @@
   <p id="say">CURRENT NEWS is the main desk. Advisors speak when asked.</p>
   <div class="buys">
     <button class="buy" id="bNow" type="button"><b>CURRENT NEWS</b><small>main desk</small></button>
-    <button class="buy" id="bMeme" type="button"><b>TOP MEMES</b><small>actual memes</small></button>
+    <button class="buy" id="bShort" type="button"><b>SHORTS</b><small>2–15s memes</small></button>
+    <button class="buy" id="bMid" type="button"><b>MEDIUM</b><small>1–5 min dumps</small></button>
+    <button class="buy" id="bLong" type="button"><b>LONG</b><small>30–60 min</small></button>
   </div>
   </div>
 </div>
@@ -804,7 +824,7 @@ function pickHits(obj, out){
   const re=/"videoId"\s*:\s*"([\w-]{11})"/g; let m;
   while((m=re.exec(dump))) out.push({id:m[1], dur:0, views:0});
 }
-function rankHits(hits){
+function rankHits(hits, lo, hi){
   const map={};
   hits.forEach(h=>{
     if(!h||!h.id||!/^[\w-]{11}$/.test(h.id)||/^[0_]{11}$/.test(h.id)) return;
@@ -814,12 +834,19 @@ function rankHits(hits){
     map[h.id]=prev;
   });
   return Object.values(map).sort((a,b)=>{
-    const as=(a.dur>=20&&a.dur<=120)?1:0, bs=(b.dur>=20&&b.dur<=120)?1:0;
+    function band(d){
+      if(lo==null) return 1;
+      if(d>=lo && d<=hi) return 2;
+      if(!d) return 0;
+      return -1;
+    }
+    const as=band(a.dur), bs=band(b.dur);
     if(as!==bs) return bs-as;
     return (b.views||0)-(a.views||0);
-  }).map(h=>h.id).slice(0,16);
+  }).filter(h=>lo==null || !h.dur || (h.dur>=lo && h.dur<=hi) || h.dur===0)
+    .map(h=>h.id).slice(0,16);
 }
-async function findYtIds(query){
+async function findYtIds(query, lo, hi){
   const q=encodeURIComponent(String(query||'world news'));
   const urls=[
     'https://api.piped.private.coffee/search?q='+q+'&filter=videos',
@@ -840,7 +867,38 @@ async function findYtIds(query){
     new Promise(res=>setTimeout(()=>res([]), 4500))
   ]).catch(()=>[]));
   const batches=await Promise.all(jobs);
-  return rankHits([].concat(...batches));
+  return rankHits([].concat(...batches), lo, hi);
+}
+async function loadComments(id){
+  const host=document.getElementById('ytcList'); if(!host) return;
+  host.textContent='Loading comments…';
+  const urls=[
+    'https://api.piped.private.coffee/comments/'+id,
+    'https://pipedapi.reallyaweso.me/comments/'+id,
+    'https://invidious.privacyredirect.com/api/v1/comments/'+id
+  ];
+  for(const u of urls){
+    try{
+      const j=await fetch(u).then(r=>r.json());
+      const arr=j.comments||j.items||[];
+      const top=arr.slice(0,5);
+      if(!top.length) continue;
+      host.innerHTML='';
+      top.forEach(c=>{
+        const li=document.createElement('li');
+        const txt=String(c.comment||c.content||c.text||c.commentText||c.author+''||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+        li.textContent=(c.author?c.author+' · ':'')+txt.slice(0,240);
+        host.appendChild(li);
+      });
+      return;
+    }catch(e){}
+  }
+  host.innerHTML='<li>No public comments for this ID.</li>';
+}
+function scalePin(){
+  const pin=document.getElementById('pin'); if(!pin) return;
+  const w=pin.getBoundingClientRect().width||480;
+  pin.style.setProperty('--ps', String(Math.max(0.75, Math.min(1.85, w/520))));
 }
 function embedIframe(id){
   const box=document.getElementById('ytframe');
@@ -854,6 +912,7 @@ function embedIframe(id){
   f.allowFullscreen=true;
   f.style.cssText='width:100%;min-height:220px;height:100%;border:0';
   box.appendChild(f);
+  loadComments(id);
 }
 function mountYt(id){
   const box=document.getElementById('ytframe');
@@ -868,7 +927,7 @@ function mountYt(id){
     width:560, height:315, videoId:id,
     playerVars:{ autoplay:1, playsinline:1, rel:0, modestbranding:1 },
     events:{
-      onReady:e=>{ videoOn=true; hushDesk(); try{ e.target.setVolume(80); e.target.playVideo(); }catch(err){} typeHekate(); },
+      onReady:e=>{ videoOn=true; hushDesk(); try{ e.target.setVolume(80); e.target.playVideo(); }catch(err){} typeHekate(); loadComments(id); },
       onStateChange:e=>{
         if(e.data===1){ videoOn=true; hushDesk(); }
         if(e.data===0){ videoOn=false; runBrief(); }
@@ -885,6 +944,7 @@ function showPinShell(title){
   if(wrap) wrap.style.display='block';
   pin.style.display='block';
   requestAnimationFrame(()=>pin.classList.add('on'));
+  scalePin();
 }
 let ytSeq=0;
 let usedVids=new Set();
@@ -900,12 +960,15 @@ async function showVideo(title, kind){
   const box=document.getElementById('ytframe');
   wrap.style.display='block';
   if(!ytPlayer) box.textContent='Finding the video…';
-  const q=kind==='meme'
-    ? title
+  const q=kind==='short' ? (title||'funny meme shorts')
+    : kind==='mid' ? (title||'world news explained')
+    : kind==='long' ? (title||'full speech interview')
     : String(title||'world news')+' news';
-  let ids=await findYtIds(q);
+  const lo=kind==='short'?2:kind==='mid'?60:kind==='long'?1800:null;
+  const hi=kind==='short'?15:kind==='mid'?300:kind==='long'?3600:null;
+  let ids=await findYtIds(q, lo, hi);
   if(seq!==ytSeq) return;
-  if(!ids.length && kind!=='meme') ids=await findYtIds('world news today breaking');
+  if(!ids.length && kind!=='short') ids=await findYtIds(kind==='long'?'full interview speech':'world news today', lo, hi);
   if(seq!==ytSeq) return;
   const id=takeFreshId(ids);
   const search='https://www.youtube.com/results?search_query='+encodeURIComponent(q);
@@ -1222,6 +1285,7 @@ if(yto) yto.onclick=()=>ytCmd('playVideo');
         pin.style.left=L+'px'; pin.style.top=T+'px';
         pin.style.width=W+'px'; pin.style.height=H+'px';
         pin.style.right='auto'; pin.style.bottom='auto';
+        scalePin();
       }
       function up(){
         window.removeEventListener('pointermove', move);
@@ -1254,9 +1318,29 @@ function theatreMode(){
   pin.style.top=T+'px';
   pin.style.right='auto'; pin.style.bottom='auto';
   pin.style.width=w+'px'; pin.style.height=h+'px';
+  scalePin();
 }
 const ytTh=document.getElementById('ytTheatre');
 if(ytTh) ytTh.onclick=theatreMode;
+(function bindPinDrag(){
+  const pin=document.getElementById('pin'); if(!pin) return;
+  pin.querySelectorAll('.pinDrag').forEach(el=>{
+    el.onpointerdown=e=>{
+      if(e.button) return;
+      e.preventDefault();
+      const r=pin.getBoundingClientRect();
+      const sx=e.clientX, sy=e.clientY, sl=r.left, st=r.top;
+      function move(ev){
+        pin.style.left=(sl+ev.clientX-sx)+'px';
+        pin.style.top=(st+ev.clientY-sy)+'px';
+        pin.style.right='auto'; pin.style.bottom='auto';
+      }
+      function up(){ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); }
+      window.addEventListener('pointermove',move);
+      window.addEventListener('pointerup',up);
+    };
+  });
+})();
 const ytVol=document.getElementById('ytVol');
 if(ytVol) ytVol.oninput=()=>{ try{ if(ytPlayer&&ytPlayer.setVolume) ytPlayer.setVolume(+ytVol.value); }catch(e){} };
 const ytSpd=document.getElementById('ytSpd');
@@ -1365,39 +1449,24 @@ async function playStory(){
 }
 let playI=0;
 document.getElementById('bNow').onclick=()=>playStory();
-const MEME_Q=[
-  'funny meme compilation short',
-  'dank memes today short',
-  'best memes this week shorts',
-  'vine boom meme',
-  'reddit funny moments compilation short',
-  'youtube shorts memes today',
-  'shitpost meme short',
-  'wholesome meme compilation short',
-  'viral meme 2026 short'
-];
-let memeI=0;
-const memeBank=[];
-async function pumpMemes(){
-  const q=MEME_Q[memeI++%MEME_Q.length];
-  const ids=await findYtIds(q);
-  ids.forEach(id=>{ if(!usedVids.has(id) && memeBank.indexOf(id)<0) memeBank.push(id); });
-}
-const bMeme=document.getElementById('bMeme');
-if(bMeme) bMeme.onclick=async()=>{
-  say('TOP MEMES');
-  showPinShell('MEME');
-  if(memeBank.length){
-    const id=memeBank.shift();
-    usedVids.add(id);
-    mountYt(id);
-    return;
-  }
-  const q=MEME_Q[memeI++%MEME_Q.length];
-  await showVideo(q, 'meme');
+const FMT={
+  short:{lo:2,hi:15, qs:['funny meme shorts','world events meme funny short','dank meme 15 seconds','viral humor short']},
+  mid:{lo:60,hi:300, qs:['world news explained 3 minutes','breaking news recap','quick news dump today','white house news brief']},
+  long:{lo:1800,hi:3600, qs:['trump full speech','elon musk full interview','global news documentary','new technology keynote full']}
 };
-pumpMemes();
-setInterval(pumpMemes, 30000);
+async function playFormat(kind){
+  const spec=FMT[kind]; if(!spec) return;
+  const q=spec.qs[Math.floor(Math.random()*spec.qs.length)];
+  say(kind.toUpperCase()+' · public YouTube search');
+  showPinShell(kind.toUpperCase());
+  await showVideo(q, kind);
+}
+const bShort=document.getElementById('bShort');
+const bMid=document.getElementById('bMid');
+const bLong=document.getElementById('bLong');
+if(bShort) bShort.onclick=()=>playFormat('short');
+if(bMid) bMid.onclick=()=>playFormat('mid');
+if(bLong) bLong.onclick=()=>playFormat('long');
 async function openStory(st){
   if(!st){ say('Caught up. New headlines arrive every minute.'); return; }
   seen.add(st.title); seenSave();
