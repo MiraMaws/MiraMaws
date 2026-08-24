@@ -208,7 +208,7 @@
 </div>
 <script>
 const TEX={
-  natural:'https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57752/land_shallow_topo_2048.jpg',
+  natural:'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
   night:'https://unpkg.com/three-globe/example/img/earth-night.jpg',
   ir:'https://unpkg.com/three-globe/example/img/earth-dark.jpg',
   data:'https://unpkg.com/three-globe/example/img/earth-dark.jpg',
@@ -344,28 +344,20 @@ try{
 function say(t){ document.getElementById('say').textContent=t; }
 let lastEvent={title:'the quiet spinning of 2026', extra:'No pin yet. The planet is still the room.', place:null};
 function flyTo(p, title, extra){
-  world.pointOfView({lat:p.lat,lng:p.lng,altitude:0.85}, 1600);
+  if(!p || p.lat==null || p.lng==null || isNaN(+p.lat) || isNaN(+p.lng)) return;
+  world.pointOfView({lat:+p.lat,lng:+p.lng,altitude:0.85}, 1600);
   document.getElementById('alt').value=0.85;
   document.getElementById('altN').textContent='0.85';
-  if(p && p.name){ /* pin only */ }
   lastEvent={title:title||p.name, extra:extra||'', place:p};
   const pin=document.getElementById('pin');
   document.getElementById('pinT').textContent=title||p.name||'Pin';
   document.getElementById('pinM').textContent=((p.name||'')+(p.c?(' · '+p.c):''))+(p.pop?(' · '+p.pop):'');
   document.getElementById('pinB').textContent=strip(extra||title||'');
   pin.style.display='block';
-  world.htmlElementsData([]);
   paintNews();
   pullHeat(p);
   say((title||p.name)+' — ask a star-sigil.');
 }
-world.htmlElement(d=>{
-  const el=document.createElement('div');
-  el.id='card';
-  el.innerHTML='<h3>'+d.name+'</h3>'+(d.c||'')+' · '+ (d.pop||'') + (d.extra?('<div style="margin-top:6px;color:#c8bdd4">'+d.extra+'</div>'):'');
-  return el;
-});
-world.htmlLat('lat').htmlLng('lng').htmlAltitude(0.04);
 
 function matchPlace(text){
   const t=(' '+String(text||'').toLowerCase()+' ').replace(/[^a-z0-9. ]/g,' ');
