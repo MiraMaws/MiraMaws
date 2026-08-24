@@ -75,7 +75,10 @@
   .adv { display:flex; gap:6px; }
   .adv button { flex:1; border:1px solid #2a2430; background:#0c0c12cc; color:var(--g);
     border-radius:999px; padding:.38rem .5rem; cursor:pointer; font-size:.76rem; letter-spacing:.04em; }
-  .spark { position:fixed; width:4px; height:4px; border-radius:50%; background:var(--g); pointer-events:none; z-index:5; }
+  .glove { position:absolute; width:22px; height:22px; left:62%; top:38%; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #c4b8d4, #3a3048); opacity:.55;
+    box-shadow:0 0 12px #5a3a7888; cursor:pointer; border:0; z-index:3; }
+  .glove:hover { opacity:.9; }
 </style>
 </head>
 <body>
@@ -101,6 +104,7 @@
       <div class="moon" title="watch"></div>
     </div>
     <button id="orb" type="button">CLICK</button>
+    <button class="glove" id="glove" type="button" title="the other host"></button>
   </div>
   <footer>
     <div class="row">
@@ -247,6 +251,9 @@ function render(){
 }
 function addXp(n){ s.xp+=n; while(s.xp>=need()){ s.xp-=need(); s.level++; say('Level '+s.level); } }
 document.getElementById('orb').onclick=e=>{ spark(e); s.lumen+=pow(); s.clicks++; addXp(1); save(); render(); };
+document.getElementById('glove').onclick=()=>{
+  s.lumen+=0.5+s.level*0.2; say('A second host poured first. You keep the wound.'); save(); render();
+};
 document.getElementById('bAuto').onclick=()=>{ const c=cost(15,s.auto); if(s.lumen<c)return; s.lumen-=c; s.auto++; save(); render(); };
 document.getElementById('bClick').onclick=()=>{ const c=cost(20,s.click); if(s.lumen<c)return; s.lumen-=c; s.click++; save(); render(); };
 document.getElementById('bHalo').onclick=()=>{ const c=cost(30,s.halo); if(s.lumen<c)return; s.lumen-=c; s.halo++; save(); render(); };
