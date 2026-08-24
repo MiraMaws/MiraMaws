@@ -120,16 +120,15 @@
 </aside>
 <div id="bar">
   <div class="row">
-    <div class="stat"><span>LIGHT</span><b id="lum">0</b></div>
-    <div class="stat"><span>/SEC</span><b id="lps">0</b></div>
-    <div class="stat"><span>LEVEL</span><b id="lvl">1</b></div>
-    <div class="stat"><span>VISITED</span><b id="vis">0</b></div>
+    <div class="stat"><span>WORLD POP</span><b id="popN">—</b></div>
+    <div class="stat"><span>NOW</span><b id="nowN">—</b></div>
+    <div class="stat"><span>NEXT</span><b id="nextN">—</b></div>
   </div>
-  <p id="say">Drag · scroll · sliders send the world to space or home.</p>
+  <p id="say">Drag · scroll · TODAY cycles live headlines. Seats comment after.</p>
   <div class="buys">
-    <button class="buy" id="bAuto"><b>Collect away</b><small>15</small></button>
-    <button class="buy" id="bClick"><b>Stronger sun</b><small>20</small></button>
-    <button class="buy" id="bHalo"><b>Brighter halo</b><small>30</small></button>
+    <button class="buy" id="bPop" type="button"><b>World population</b><small>UN-range clock</small></button>
+    <button class="buy" id="bNow" type="button"><b>Current news</b><small>this story</small></button>
+    <button class="buy" id="bNext" type="button"><b>Upcoming</b><small>next headline</small></button>
   </div>
 </div>
 <script>
@@ -232,9 +231,10 @@ function flyTo(p, title, extra){
   world.pointOfView({lat:p.lat,lng:p.lng,altitude:0.85}, 1600);
   document.getElementById('alt').value=0.85;
   document.getElementById('altN').textContent='0.85';
-  if(!s.seen[p.name]){ s.seen[p.name]=1; s.lumen+=3; save(); render(); }
+  if(p && p.name){ /* visit no longer a game score */ }
   world.htmlElementsData([{lat:p.lat,lng:p.lng,name:p.name,c:p.c,pop:p.pop,extra:extra||''}]);
   lastEvent={title:title||p.name, extra:extra||'', place:p};
+  paintNews();
   say((title||p.name)+' — the world turned. Ask a seat.');
 }
 world.htmlElement(d=>{
@@ -438,36 +438,40 @@ function drawSpark(){
 }
 drawSpark();
 
-function load(){ try{return JSON.parse(localStorage.getItem('ww_public')||'');}catch(e){return null;} }
-const s=Object.assign({lumen:0,clicks:0,xp:0,level:1,auto:0,click:0,halo:0,seen:{},t:Date.now()},load()||{});
-if(!s.seen) s.seen={};
-function save(){ s.t=Date.now(); localStorage.setItem('ww_public',JSON.stringify(s)); }
-function cost(b,lv){ return Math.max(1,Math.floor(b*Math.pow(1.18,lv))); }
-function pow(){ return 1+s.click+s.halo*0.25; }
-function lps(){ return (s.auto*0.4)*(1+s.halo*0.05); }
-function need(){ return 20+s.level*15; }
-function fmt(n){ return n>=1000?n.toFixed(1):Math.floor(n*10)/10; }
-function render(){
-  document.getElementById('lum').textContent=fmt(s.lumen);
-  document.getElementById('lps').textContent=fmt(lps());
-  document.getElementById('lvl').textContent=s.level;
-  document.getElementById('vis').textContent=Object.keys(s.seen).length;
-  [['bAuto',15,'auto'],['bClick',20,'click'],['bHalo',30,'halo']].forEach(([id,b,k])=>{
-    const el=document.getElementById(id);
-    el.disabled=s.lumen<cost(b,s[k]); el.classList.toggle('go',!el.disabled);
-    el.querySelector('small').textContent=cost(b,s[k]);
-  });
+const POP0=8231000000, T0=Date.UTC(2026,0,1), PPS=2.15;
+function worldPop(){ return Math.floor(POP0+Math.max(0,(Date.now()-T0)/1000)*PPS); }
+function popStr(n){ return n.toLocaleString('en-US'); }
+function paintNews(){
+  const now=liveStories.length?liveStories[(Math.max(0,newsI-1))%liveStories.length]:null;
+  const nxt=liveStories.length?liveStories[newsI%liveStories.length]:null;
+  const cut=t=>String(t||'—').slice(0,28);
+  document.getElementById('nowN').textContent=cut(now&&now.title||lastEvent.title);
+  document.getElementById('nextN').textContent=cut(nxt&&nxt.title);
+  document.getElementById('popN').textContent=popStr(worldPop());
 }
-function addXp(n){ s.xp=(s.xp||0)+n; while(s.xp>=need()){ s.xp-=need(); s.level++; say('Level '+s.level); } }
-addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); s.lumen+=pow(); s.clicks++; addXp(1); save(); render(); }});
-document.getElementById('bAuto').onclick=()=>{ const c=cost(15,s.auto); if(s.lumen<c)return; s.lumen-=c; s.auto++; save(); render(); };
-document.getElementById('bClick').onclick=()=>{ const c=cost(20,s.click); if(s.lumen<c)return; s.lumen-=c; s.click++; save(); render(); };
-document.getElementById('bHalo').onclick=()=>{ const c=cost(30,s.halo); if(s.lumen<c)return; s.lumen-=c; s.halo++; save(); render(); };
-(function(){ const dt=Math.min(8*3600,(Date.now()-(s.t||Date.now()))/1000); const g=lps()*dt; if(g>1){ s.lumen+=g; say('While away +'+fmt(g)); }})();
-setInterval(()=>{ s.lumen+=lps(); if(lps()>0) addXp(0.04); save(); render(); },1000);
-render();
-loadToday().then(()=>syncEarth());
-setInterval(()=>{ loadToday().then(()=>syncEarth()); }, 300000);
+function showStory(i){
+  if(!liveStories.length) return;
+  newsI=i%liveStories.length;
+  const st=liveStories[newsI];
+  newsI++;
+  const place=matchPlace(st.title+' '+st.text);
+  flyTo(place, 'TODAY · '+st.title, st.text);
+}
+document.getElementById('bPop').onclick=()=>say('World population (modeled UN-range clock): '+popStr(worldPop())+'. Not a census office.');
+document.getElementById('bNow').onclick=async()=>{
+  if(!liveStories.length) await loadToday();
+  if(!liveStories.length){ say('No current story.'); return; }
+  showStory(Math.max(0,newsI-1));
+};
+document.getElementById('bNext').onclick=async()=>{
+  if(!liveStories.length) await loadToday();
+  if(!liveStories.length){ say('No upcoming story.'); return; }
+  showStory(newsI);
+};
+setInterval(()=>{ document.getElementById('popN').textContent=popStr(worldPop()); },1000);
+paintNews();
+loadToday().then(()=>{ paintNews(); return syncEarth(); });
+setInterval(()=>{ loadToday().then(()=>{ paintNews(); return syncEarth(); }); }, 300000);
 </script>
 </body>
 </html>
