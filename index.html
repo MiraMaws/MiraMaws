@@ -9,11 +9,16 @@
   * { box-sizing:border-box; margin:0; }
   html,body,#globe { height:100%; background:var(--bg); color:var(--ink); font-family:"Segoe UI",ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
   #globe { position:fixed; inset:0; width:100%; height:100%; min-height:100dvh; }
+  html,body { background:#03060d url('assets/space.jpg') center/cover no-repeat fixed; }
+  #reel { position:fixed; left:50%; top:44%; width:min(70vmin,520px); height:min(70vmin,520px);
+    transform:translate(-50%,-50%); z-index:1; object-fit:cover; border-radius:50%;
+    pointer-events:none; box-shadow:0 0 60px #0af4; }
+  body.globe-ok #reel { opacity:.22; filter:blur(1px); }
   #fallback {
     position:fixed; left:50%; top:44%; width:min(52vmin,320px); height:min(52vmin,320px);
     transform:translate(-50%,-50%); z-index:1; pointer-events:none;
     border-radius:50%;
-    background:radial-gradient(circle at 32% 26%, #b8e0ff, #3a7ab8 30%, #143868 58%, #071018);
+    background: url('assets/earth_day.jpg') center/cover no-repeat;
     box-shadow:inset -22px -16px 36px #000c, 0 0 48px #2468aa66;
   }
   #fallback .land { position:absolute; inset:-20%; border-radius:50%;
@@ -136,6 +141,8 @@
 </head>
 <body>
 <div id="globe"></div>
+<video id="reel" src="assets/earth_spin.mp4" muted loop playsinline autoplay></video>
+<audio id="chatter" src="assets/chatter.mp3" loop preload="auto"></audio>
 <div id="fallback" aria-hidden="true"><div class="land"></div><div class="shade"></div></div>
 <div id="sol" aria-hidden="true">
   <i class="pl su" style="--r:46vmin"></i>
@@ -415,6 +422,7 @@ function ytFor(title){
   };
 }
 function showVideo(title){
+  pauseChatter();
   const y=ytFor(title);
   const wrap=document.getElementById('ytwrap');
   wrap.style.display='block';
@@ -642,7 +650,24 @@ document.getElementById('tR').onclick=()=>{ document.getElementById('right').cla
 document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>say(voice(b.dataset.ask)));
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>window.open(b.dataset.open,'_blank','noopener'));
 const pinEl=document.getElementById('pinX');
-if(pinEl) pinEl.onclick=()=>{ document.getElementById('pin').style.display='none'; };
+if(pinEl) pinEl.onclick=()=>{ document.getElementById('pin').style.display='none'; const w=document.getElementById('ytwrap'); if(w){ w.style.display='none'; w.innerHTML=''; } resumeChatter(); };
+
+const chatter=document.getElementById('chatter');
+function pauseChatter(){ try{ if(chatter) chatter.pause(); }catch(e){} }
+function resumeChatter(){
+  try{
+    if(!chatter) return;
+    chatter.volume=0.3;
+    const p=chatter.play();
+    if(p&&p.catch) p.catch(()=>{});
+  }catch(e){}
+}
+function armChatter(){
+  resumeChatter();
+  document.removeEventListener('pointerdown', armChatter);
+}
+document.addEventListener('pointerdown', armChatter);
+if(chatter){ chatter.loop=true; chatter.volume=0.3; }
 const SEATS=['astarte','asmodeus','amun','anubis','tut','maat','hekate','paimon'];
 let seatI=0;
 setInterval(()=>say(voice(SEATS[seatI++%SEATS.length])), 48000);
