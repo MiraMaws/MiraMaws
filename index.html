@@ -53,6 +53,13 @@
   .buy small { display:block; color:var(--d); }
   #say { text-align:center; font-size:12px; color:#c8bdd4; min-height:1.6em; margin:5px 0; }
   .dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; }
+  .mrow { display:flex; justify-content:space-between; gap:8px; font-size:11px; padding:4px 0; border-bottom:1px solid #1a1a24; }
+  .mrow b { color:var(--g); font-variant-numeric:tabular-nums; }
+  #sync { font-size:10px; color:#6a9a78; margin-top:6px; }
+  .arch { background:#050508; border:1px solid #111; border-radius:8px; padding:6px; max-height:26vh; overflow:auto; }
+  .arch .ev { padding:5px; margin:4px 0; background:#08080c; }
+  .arch .ev b { color:#6a6570; font-size:10px; }
+  .arch .ev span { color:#4a4650; font-size:10px; }
 </style>
 <script src="https://unpkg.com/globe.gl"></script>
 </head>
@@ -77,6 +84,12 @@
   <input id="alt" type="range" min="0.5" max="6" step="0.05" value="2.4"/>
   <label class="sl">Spin <b id="spN">0.4</b></label>
   <input id="spin" type="range" min="0" max="2" step="0.05" value="0.4"/>
+  <h2>LIVE EARTH</h2>
+  <div class="mrow"><span>CO₂</span><b id="mCo2">…</b></div>
+  <div class="mrow"><span>Temp Δ</span><b id="mTemp">…</b></div>
+  <div class="mrow"><span>Orbit 2026</span><b id="mOrb">…</b></div>
+  <div class="mrow"><span>Quakes (wk)</span><b id="mQ">…</b></div>
+  <p id="sync">sync —</p>
   <h2>ADVISORY</h2>
   <button class="item" data-ask="hekate">Ask Hekate</button>
   <button class="item" data-ask="board">Board</button>
@@ -84,9 +97,12 @@
   <button class="item" id="bDay">Today — fly to the day</button>
 </aside>
 <aside class="side" id="right">
-  <h1>EVENTS</h1>
-  <p class="sub" id="evSub">Public record · on this day</p>
+  <h1>2026 BOARD</h1>
+  <p class="sub" id="evSub">This year · public feeds</p>
   <div id="feed"></div>
+  <h2>ARCHIVE</h2>
+  <p class="sub">Earlier years · quieter ink</p>
+  <div class="arch" id="arch"></div>
 </aside>
 <div id="bar">
   <div class="row">
@@ -162,7 +178,9 @@ const world=Globe()(document.getElementById('globe'))
   .atmosphereAltitude(0.2)
   .pointsData(PLACES)
   .pointLat('lat').pointLng('lng')
-  .pointColor(()=>'#c9a227').pointAltitude(0.01).pointRadius(0.22)
+  .pointColor(d=> d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227')
+  .pointAltitude(d=> d.kind ? 0.02 : 0.01)
+  .pointRadius(d=> d.kind ? 0.32 : 0.22)
   .pointLabel(d=>d.name+', '+d.c)
   .onPointClick(d=>flyTo(d, d.name+' · '+d.c))
   .arcsData(ARCS)
@@ -198,28 +216,106 @@ function matchPlace(text){
   return PLACES.find(p=>t.includes(p.c.toLowerCase())||t.includes(p.name.toLowerCase())) || PLACES[Math.floor(Math.random()*PLACES.length)];
 }
 
+let livePins=[];
+function paintPins(){
+  const cities=document.getElementById('bCity').classList.contains('on')?PLACES:[];
+  world.pointsData(cities.concat(livePins));
+}
+
+function orbitPct(){
+  const t=new Date();
+  const start=new Date(t.getFullYear(),0,1);
+  const end=new Date(t.getFullYear()+1,0,1);
+  return ((t-start)/(end-start))*100;
+}
+
+function card(host, title, body, place, extra){
+  const el=document.createElement('div');
+  el.className='ev';
+  el.innerHTML='<b>'+title+'</b><span>'+body+'</span>';
+  el.onclick=()=>flyTo(place, title, extra||body);
+  host.appendChild(el);
+}
+
 async function loadToday(){
   const n=new Date();
   const feed=document.getElementById('feed');
-  feed.textContent='Loading public record…';
+  const arch=document.getElementById('arch');
+  feed.textContent='Loading 2026…';
   try{
     const r=await fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${n.getUTCMonth()+1}/${n.getUTCDate()}`);
     const j=await r.json();
-    const ev=(j.events||[]).slice(0,8);
-    feed.innerHTML='';
-    ev.forEach(e=>{
+    const ev=j.events||[];
+    const y26=ev.filter(e=>+e.year>=2026);
+    const old=ev.filter(e=>+e.year<2026).slice(0,6);
+    const show=y26.length?y26:ev.filter(e=>+e.year>=2020).slice(0,5);
+    feed.innerHTML=''; arch.innerHTML='';
+    (show.length?show:ev.slice(0,4)).forEach(e=>{
       const place=matchPlace(e.text);
-      const card=document.createElement('div');
-      card.className='ev';
-      card.innerHTML='<b>'+e.year+' · '+place.c+'</b><span>'+String(e.text||'').slice(0,140)+'</span>';
-      card.onclick=()=>flyTo(place, e.year+' · '+place.c, String(e.text||'').slice(0,180));
-      feed.appendChild(card);
+      card(feed, e.year+' · '+place.c, String(e.text||'').slice(0,140), place, String(e.text||'').slice(0,180));
     });
-    document.getElementById('evSub').textContent='On this day · '+n.toDateString();
+    old.forEach(e=>{
+      const place=matchPlace(e.text);
+      card(arch, e.year+' · '+place.c, String(e.text||'').slice(0,110), place, String(e.text||'').slice(0,160));
+    });
+    document.getElementById('evSub').textContent='2026 board · '+n.toDateString();
     return ev;
   }catch(err){
     feed.innerHTML='<div class="ev"><b>Archive blinked</b><span>Try Today again.</span></div>';
     return [];
+  }
+}
+
+async function syncEarth(){
+  document.getElementById('mOrb').textContent=orbitPct().toFixed(3)+'%';
+  try{
+    const [eq, eo, co2, tmp]=await Promise.allSettled([
+      fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson').then(r=>r.json()),
+      fetch('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=12').then(r=>r.json()),
+      fetch('https://global-warming.org/api/co2-api').then(r=>r.json()),
+      fetch('https://global-warming.org/api/temperature-api').then(r=>r.json())
+    ]);
+    livePins=[];
+    if(eq.status==='fulfilled'){
+      const feats=(eq.value.features||[]).slice(0,20);
+      document.getElementById('mQ').textContent=String(feats.length);
+      feats.forEach(f=>{
+        const c=f.geometry&&f.geometry.coordinates;
+        if(!c) return;
+        livePins.push({name:(f.properties&&f.properties.place)||'quake', c:'USGS', lat:c[1], lng:c[0], pop:'M'+(f.properties&&f.properties.mag), kind:'quake'});
+      });
+      const feed=document.getElementById('feed');
+      feats.slice(0,4).forEach(f=>{
+        const c=f.geometry.coordinates;
+        const p={name:f.properties.place, c:'Quake', lat:c[1], lng:c[0], pop:'M'+f.properties.mag};
+        card(feed, '2026 · USGS M'+f.properties.mag, f.properties.place, p, 'Public earthquake feed.');
+      });
+    } else document.getElementById('mQ').textContent='—';
+    if(eo.status==='fulfilled'){
+      (eo.value.events||[]).slice(0,8).forEach(ev=>{
+        const g=ev.geometry&&ev.geometry[ev.geometry.length-1];
+        if(!g||!g.coordinates) return;
+        const [lng,lat]=g.coordinates;
+        const fire=/fire|wildfire/i.test(ev.categories&&ev.categories[0]&&ev.categories[0].title||'');
+        livePins.push({name:ev.title, c:'EONET', lat, lng, pop:ev.categories[0]&&ev.categories[0].title, kind:fire?'fire':'quake'});
+      });
+    }
+    if(co2.status==='fulfilled' && co2.value.co2&&co2.value.co2.length){
+      document.getElementById('mCo2').textContent=parseFloat(co2.value.co2[co2.value.co2.length-1].trend).toFixed(2)+' ppm';
+    } else document.getElementById('mCo2').textContent='n/a';
+    if(tmp.status==='fulfilled' && tmp.value.result&&tmp.value.result.length){
+      const last=tmp.value.result[tmp.value.result.length-1];
+      const v=parseFloat(last.land||last.station||0);
+      document.getElementById('mTemp').textContent=(v>=0?'+':'')+v.toFixed(2)+'°';
+    } else if(tmp.status==='fulfilled' && tmp.value.temperature&&tmp.value.temperature.length){
+      const v=parseFloat(tmp.value.temperature[tmp.value.temperature.length-1].land);
+      document.getElementById('mTemp').textContent=(v>=0?'+':'')+v.toFixed(2)+'°';
+    } else document.getElementById('mTemp').textContent='n/a';
+    paintPins();
+    document.getElementById('sync').textContent='sync '+new Date().toLocaleTimeString()+' · USGS · EONET · wiki';
+  }catch(e){
+    document.getElementById('sync').textContent='sync partial';
+    paintPins();
   }
 }
 
@@ -237,9 +333,9 @@ document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
   const m=b.dataset.m;
   world.globeImageUrl(TEX[m]);
   world.atmosphereColor(m==='ir'?'#ff5a2a': m==='data'?'#3dd6c6':'#7c5cff');
-  world.pointColor(()=> m==='ir'?'#ff7a3a':'#c9a227');
+  world.pointColor(d=> m==='ir' ? '#ff7a3a' : (d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227'));
 });
-document.getElementById('bCity').onclick=function(){ this.classList.toggle('on'); world.pointsData(this.classList.contains('on')?PLACES:[]); };
+document.getElementById('bCity').onclick=function(){ this.classList.toggle('on'); paintPins(); };
 document.getElementById('bArc').onclick=function(){ this.classList.toggle('on'); world.arcsData(this.classList.contains('on')?ARCS:[]); };
 document.getElementById('bHex').onclick=function(){ this.classList.toggle('on'); world.hexBinPointsData(this.classList.contains('on')?HEX:[]); };
 document.getElementById('alt').oninput=e=>{
@@ -282,7 +378,8 @@ document.getElementById('bHalo').onclick=()=>{ const c=cost(30,s.halo); if(s.lum
 (function(){ const dt=Math.min(8*3600,(Date.now()-(s.t||Date.now()))/1000); const g=lps()*dt; if(g>1){ s.lumen+=g; say('While away +'+fmt(g)); }})();
 setInterval(()=>{ s.lumen+=lps(); if(lps()>0) addXp(0.04); save(); render(); },1000);
 render();
-loadToday();
+loadToday().then(()=>syncEarth());
+setInterval(()=>{ loadToday().then(()=>syncEarth()); }, 300000);
 </script>
 </body>
 </html>
