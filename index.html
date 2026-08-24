@@ -85,12 +85,33 @@
   .ev:hover { border-color:var(--m); box-shadow:0 0 10px #ff2ea633; }
   .ev b { display:block; font-size:11px; color:#ff9adf; }
   .ev span { font-size:10px; color:var(--d); }
-  #pin { position:fixed; left:50%; bottom:118px; z-index:9;
-    width:min(420px,90vw); display:none; padding:10px 12px 12px;
-    transform:translate(-50%, 30%) scale(.35); opacity:0; transform-origin:50% 120%;
-    transition:transform .55s cubic-bezier(.16,1,.3,1), opacity .35s; }
-  #pin.on { display:block; transform:translate(-50%,0) scale(1); opacity:1; }
-  #pin.big { width:min(920px,96vw); bottom:16px; }
+  #pin { position:fixed; top:12px; right: max(12px, calc(50% - 380px + 400px)); left:auto; bottom:auto; z-index:9;
+    width:min(480px,46vw); min-width:320px; min-height:220px; max-width:70vw; max-height:72vh;
+    display:none; padding:10px 12px 12px; resize:both; overflow:auto;
+    transform:scale(.92); opacity:0; transform-origin:top right;
+    transition:transform .35s ease, opacity .25s; }
+  #pin.on { display:block; transform:scale(1); opacity:1; }
+  #pin.big { width:min(860px,72vw); }
+  .liveban { display:inline-flex; align-items:center; gap:6px; color:#ff4d6d; font-size:10px;
+    letter-spacing:.2em; font-weight:800; margin:2px 0 6px; }
+  .liveban i { width:8px; height:8px; border-radius:50%; background:#ff2a2a; box-shadow:0 0 8px #ff2a2a;
+    animation:live 1s ease-in-out infinite; }
+  @keyframes live { 50% { opacity:.25; } }
+  #hekateLive { min-height:2.6em; color:#ffd0e8; font-size:12px; line-height:1.4; margin:6px 0; }
+  #advisors { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  #advisors button { flex:1 1 22%; min-width:64px; padding:5px 4px; font-size:9px; letter-spacing:.06em;
+    border:1px solid #c44dff66; background:#16061e; color:#e8d0ff; cursor:pointer; }
+  #advisors button:hover { border-color:#ff7ad9; }
+  #bNow {
+    flex:2.2 !important; padding:12px 8px !important; font-size:13px !important; font-weight:800;
+    color:#fff !important; letter-spacing:.14em;
+    background:linear-gradient(90deg,#7a00ff,#ff2ea6 45%,#ff6bcb) !important;
+    border:1px solid #ff9adf !important; box-shadow:0 0 22px #ff2ea688 !important;
+    animation:flash 1.4s ease-in-out infinite;
+  }
+  .ytctl { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px; }
+  .ytctl label { color:#d8c0f0; font-size:10px; display:flex; align-items:center; gap:4px; }
+  .ytctl select, .ytctl input[type=range] { accent-color:#ff2ea6; background:#12061c; color:#e8d0ff; border:1px solid #3a1458; }
   #brief { display:none; margin-top:8px; padding:8px; border:1px solid #c44dff55; background:#12061ccc;
     font-family:ui-monospace,Consolas,monospace; font-size:11px; line-height:1.45; color:#e8d0ff;
     max-height:28vh; overflow:auto; }
@@ -241,27 +262,45 @@
   <i class="pl ju" style="--r:42vmin"></i>
   <i class="pl sa" style="--r:48vmin"></i>
 </div>
-<button class="sig s1" data-ask="astarte" style="left:16%;top:16%" title="Astarte">♡</button>
-<button class="sig s2" data-ask="asmodeus" style="left:28%;top:10%" title="Asmodeus">🜂</button>
-<button class="sig s3" data-ask="amun" style="left:70%;top:11%" title="Amun-Ra">☉</button>
-<button class="sig s4" data-ask="anubis" style="left:82%;top:20%" title="Anubis">⚖</button>
-<button class="sig s5" data-ask="tut" style="left:14%;top:72%" title="Tut">☥</button>
-<button class="sig s6" data-ask="maat" style="left:84%;top:70%" title="Maat">🪶</button>
-<button class="sig s7" data-ask="hekate" style="left:22%;top:84%" title="Hekate">🗝</button>
-<button class="sig s8" data-ask="paimon" style="left:76%;top:86%" title="Paimon">★</button>
 <div id="pin" class="hud">
   <button id="pinX" type="button">✕</button>
   <h3 id="pinT"></h3>
+  <div class="liveban"><i></i> LIVE NEWS</div>
   <div class="meta" id="pinM"></div>
-  <p id="pinB" style="line-height:1.5;max-height:7.5em;overflow:auto;white-space:pre-wrap"></p>
-  <div id="ytwrap" style="display:none;margin-top:8px;background:#000;border:1px solid #143044">
-    <div id="ytframe" style="aspect-ratio:16/9"></div>
+  <p id="pinB" style="line-height:1.5;max-height:5.5em;overflow:auto;white-space:pre-wrap"></p>
+  <div id="ytwrap" style="display:none;margin-top:8px;background:#000;border:1px solid #3a1458">
+    <div id="ytframe" style="min-height:200px;aspect-ratio:16/9"></div>
     <div class="ytctl">
       <button type="button" id="ytPause">Pause</button>
       <button type="button" id="ytPlay">Play</button>
-      <button type="button" id="ytBig">Bigger</button>
+      <label>Vol <input id="ytVol" type="range" min="0" max="100" value="80"/></label>
+      <select id="ytSpd" title="Speed">
+        <option value="0.5">0.5x</option>
+        <option value="1" selected>1x</option>
+        <option value="1.25">1.25x</option>
+        <option value="1.5">1.5x</option>
+        <option value="2">2x</option>
+      </select>
+      <select id="ytQ" title="Quality">
+        <option value="auto">Auto</option>
+        <option value="medium">360</option>
+        <option value="large">480</option>
+        <option value="hd720">720</option>
+        <option value="hd1080">1080</option>
+      </select>
       <a id="ytlink" href="#" target="_blank" rel="noopener">YouTube ↗</a>
     </div>
+  </div>
+  <p id="hekateLive"></p>
+  <div id="advisors">
+    <button type="button" data-ask="astarte">Astarte</button>
+    <button type="button" data-ask="asmodeus">Asmodeus</button>
+    <button type="button" data-ask="amun">Amun</button>
+    <button type="button" data-ask="anubis">Anubis</button>
+    <button type="button" data-ask="tut">Tut</button>
+    <button type="button" data-ask="maat">Maat</button>
+    <button type="button" data-ask="paimon">Paimon</button>
+    <button type="button" data-ask="board">Board</button>
   </div>
   <div id="brief"></div>
 </div>
@@ -293,7 +332,6 @@
   <div class="mrow"><span>Orbit</span><b id="mOrb">…</b></div>
   <div class="mrow"><span>Quakes</span><b id="mQ">…</b></div>
   <p id="sync">sync —</p>
-  <button class="item" id="bDay" type="button">TODAY</button>
   <button class="item" id="bRadio" type="button">RADIO · ON</button>
   <h2>CENSUS</h2>
   <div id="census"></div>
@@ -332,11 +370,11 @@
     <div class="stat"><span>NOW</span><b id="nowN">—</b></div>
     <div class="stat"><span>NEXT</span><b id="nextN">—</b></div>
   </div>
-  <p id="say">Drag · scroll · TODAY cycles live headlines. Seats comment after.</p>
+  <p id="say">CURRENT NEWS is the main desk. Advisors speak when asked.</p>
   <div class="buys">
-    <button class="buy" id="bPop" type="button"><b>World population</b><small>UN-range clock</small></button>
-    <button class="buy" id="bNow" type="button"><b>Current news</b><small>this story</small></button>
+    <button class="buy" id="bNow" type="button"><b>CURRENT NEWS</b><small>main desk</small></button>
     <button class="buy" id="bNext" type="button"><b>Upcoming</b><small>next headline</small></button>
+    <button class="buy" id="bPop" type="button"><b>World pop</b><small>UN-range</small></button>
   </div>
   </div>
 </div>
@@ -428,21 +466,40 @@ function planetNote(){
   return 'Quakes this week '+q+'. Orbit '+o+'.';
 }
 function voice(id){
-  const ev=clip(lastEvent.title);
-  const bit=clip(lastEvent.extra);
-  const here=lastEvent.place?(lastEvent.place.c||lastEvent.place.name):'the rim';
-  const g={
-    astarte:'ASTARTE · '+here+' is still a vow. 2026: '+ev+'. Keep the street, not the slogan.',
-    asmodeus:'ASMODEUS · leftover Heat in '+here+'. '+planetNote()+' Spend it or it compounds crimson.',
-    amun:'AMUN-RA · the brightest part of '+ev+' is unpublished. File it. Do not parade it.',
-    anubis:'ANUBIS · I weighed '+ev+'. What died there — did we name it? '+bit,
-    tut:'TUT · restore one name under '+ev+'. The archive is a living mouth.',
-    maat:'MAAT · tilt, not a verdict. '+planetNote()+' Perfect balance would stop the year.',
-    hekate:'HEKATE · hinge at '+here+'. After '+ev+', pick a door. Zoom is how we enter.',
-    paimon:'PAIMON · I announced '+ev+' too loud. The band is already in '+here+'. You are late. Good.',
-    board:'Board · vow '+here+' · hide the workshop · weigh Heat · restore the name · keep the tilt.'
+  const title=String(lastEvent.title||'this item').replace(/^2026 · /,'');
+  const body=String(lastEvent.extra||'');
+  const here=lastEvent.place?(lastEvent.place.c||lastEvent.place.name):'the map';
+  const blob=(title+' '+body).toLowerCase();
+  const war=/war|attack|missile|invade|strike|bomb|troop|gaza|ukraine/.test(blob);
+  const vote=/elect|vote|poll|parliament|congress|president|court/.test(blob);
+  const money=/bank|market|stock|oil|gold|bitcoin|inflat|trade|tariff/.test(blob);
+  const earth=/flood|fire|quake|storm|heat|climate|virus/.test(blob);
+  const tech=/ai|cyber|hack|chip|space|satellite/.test(blob);
+  const stake=war?'force':vote?'law':money?'ledger':earth?'weather':tech?'machine':'rumour';
+  const line={
+    hekate:'LIVE NEWS — HEKATE · "'+title+'" is the hinge. The door that pays is in '+here+', not the face on the clip. If this story dies tomorrow, who still profits? That is the real '+stake+'.',
+    astarte:'ASTARTE · '+here+' is being asked to swear something in public over "'+title+'". A vow that needs a camera is already leaking. Keep the street. Drop the slogan.',
+    asmodeus:'ASMODEUS · leftover Heat under "'+title+'". '+stake+' always leaves unused voltage. If '+here+' does not spend it, it compounds on someone smaller.',
+    amun:'AMUN-RA · the brightest sentence in this piece is the one they want filed last. Do not parade "'+title+'". Archive the unpublished half.',
+    anubis:'ANUBIS · I weighed "'+title+'". Name what actually died — a person, a treaty, a price, or only a presser. If nothing died, this was costume.',
+    tut:'TUT · restore one proper name under "'+title+'". Headlines rot. The archive in '+here+' will outlive the thumbnail.',
+    maat:'MAAT · tilt, not a verdict. "'+title+'" wants you certain. Stay one degree off. Perfect balance would stop 2026.',
+    paimon:'PAIMON · I would have announced "'+title+'" too loud. If the band is already in '+here+', you are late — which means the room is honest.',
+    board:'BOARD · '+here+' · '+stake+' · "'+title+'" · weigh Heat · hide the workshop · keep the tilt.'
   };
-  return g[id]||g.board;
+  return line[id]||line.board;
+}
+let typeT=null;
+function typeHekate(){
+  const el=document.getElementById('hekateLive'); if(!el) return;
+  const text=voice('hekate');
+  clearInterval(typeT);
+  el.textContent='';
+  let i=0;
+  typeT=setInterval(()=>{
+    el.textContent=text.slice(0,++i);
+    if(i>=text.length) clearInterval(typeT);
+  }, 11);
 }
 
 let world=null;
@@ -751,7 +808,7 @@ function mountYt(id){
     width:560, height:315, videoId:id,
     playerVars:{ autoplay:1, playsinline:1, rel:0, modestbranding:1, origin:location.origin },
     events:{
-      onReady:e=>{ videoOn=true; hushDesk(); try{ e.target.playVideo(); }catch(err){} },
+      onReady:e=>{ videoOn=true; hushDesk(); try{ e.target.setVolume(80); e.target.playVideo(); }catch(err){} typeHekate(); },
       onStateChange:e=>{
         if(e.data===1){ videoOn=true; hushDesk(); }
         if(e.data===0){ videoOn=false; runBrief(); }
@@ -1032,7 +1089,12 @@ document.getElementById('spin').oninput=e=>{
 };
 document.getElementById('tL').onclick=()=>{ document.getElementById('left').classList.toggle('hideL'); document.body.classList.toggle('lOff'); };
 document.getElementById('tR').onclick=()=>{ document.getElementById('right').classList.toggle('hideR'); document.body.classList.toggle('rOff'); };
-document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>say(voice(b.dataset.ask)));
+document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>{
+  const line=voice(b.dataset.ask);
+  say(line);
+  const br=document.getElementById('brief');
+  if(br){ br.style.display='block'; br.textContent=line; }
+});
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>window.open(b.dataset.open,'_blank','noopener'));
 const pinEl=document.getElementById('pinX');
 if(pinEl) pinEl.onclick=()=>{
@@ -1049,10 +1111,14 @@ if(pinEl) pinEl.onclick=()=>{
 };
 const ytp=document.getElementById('ytPause');
 const yto=document.getElementById('ytPlay');
-const ytb=document.getElementById('ytBig');
 if(ytp) ytp.onclick=()=>ytCmd('pauseVideo');
 if(yto) yto.onclick=()=>ytCmd('playVideo');
-if(ytb) ytb.onclick=()=>document.getElementById('pin').classList.toggle('big');
+const ytVol=document.getElementById('ytVol');
+if(ytVol) ytVol.oninput=()=>{ try{ if(ytPlayer&&ytPlayer.setVolume) ytPlayer.setVolume(+ytVol.value); }catch(e){} };
+const ytSpd=document.getElementById('ytSpd');
+if(ytSpd) ytSpd.onchange=()=>{ try{ if(ytPlayer&&ytPlayer.setPlaybackRate) ytPlayer.setPlaybackRate(+ytSpd.value); }catch(e){} };
+const ytQ=document.getElementById('ytQ');
+if(ytQ) ytQ.onchange=()=>{ try{ if(ytPlayer&&ytPlayer.setPlaybackQuality) ytPlayer.setPlaybackQuality(ytQ.value); }catch(e){} };
 window.addEventListener('message',ev=>{
   try{
     const d=typeof ev.data==='string'?JSON.parse(ev.data):ev.data;
@@ -1093,8 +1159,6 @@ if(miraBox) miraBox.onclick=()=>{
   miraSpeak(lastEvent.title, lastEvent.extra);
 };
 const SEATS=['astarte','asmodeus','amun','anubis','tut','maat','hekate','paimon'];
-let seatI=0;
-setInterval(()=>say(voice(SEATS[seatI++%SEATS.length])), 72000);
 function drawSpark(){
   const svg=document.getElementById('spark'); if(!svg) return;
   const t=new Date(), doy=Math.floor((t-new Date(t.getFullYear(),0,0))/86400000);
