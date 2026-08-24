@@ -773,49 +773,59 @@ function pickIds(obj, out){
 async function findYtIds(title){
   const q=encodeURIComponent(String(title||'world news')+' news');
   const urls=[
-    'https://pipedapi.reallyaweso.me/search?q='+q+'&filter=videos',
     'https://api.piped.private.coffee/search?q='+q+'&filter=videos',
+    'https://pipedapi.reallyaweso.me/search?q='+q+'&filter=videos',
     'https://pipedapi.darkness.services/search?q='+q+'&filter=videos',
-    'https://invidious.jing.rocks/api/v1/search?q='+q+'&type=video',
-    'https://yt.artemislena.eu/api/v1/search?q='+q+'&type=video',
     'https://invidious.privacyredirect.com/api/v1/search?q='+q+'&type=video',
-    'https://iv.ggtyler.dev/api/v1/search?q='+q+'&type=video',
-    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent('https://www.youtube.com/results?search_query='+q)
+    'https://yt.artemislena.eu/api/v1/search?q='+q+'&type=video',
+    'https://iv.ggtyler.dev/api/v1/search?q='+q+'&type=video'
   ];
-  const ids=[];
-  for(const u of urls){
-    try{
-      const r=await fetch(u);
-      const txt=await r.text();
+  const jobs=urls.map(u=>Promise.race([
+    fetch(u).then(r=>r.text()).then(txt=>{
+      const ids=[];
       try{ pickIds(JSON.parse(txt), ids); }catch(e){
-        const fromHtml=[...txt.matchAll(/(?:watch\?v=|\/embed\/|"videoId":")([\w-]{11})/g)].map(x=>x[1]);
-        ids.push(...fromHtml);
+        [...txt.matchAll(/(?:watch\?v=|\/embed\/|"videoId":")([\w-]{11})/g)].forEach(m=>ids.push(m[1]));
       }
-      if(ids.length) break;
-    }catch(e){}
-  }
-  return [...new Set(ids)].filter(id=>!/^[0_]{11}$/.test(id)).slice(0,8);
+      return ids;
+    }),
+    new Promise(res=>setTimeout(()=>res([]), 4500))
+  ]).catch(()=>[]));
+  const batches=await Promise.all(jobs);
+  const ids=[].concat(...batches);
+  return [...new Set(ids)].filter(id=>/^[\w-]{11}$/.test(id)&&!/^[0_]{11}$/.test(id)).slice(0,8);
+}
+function embedIframe(id){
+  const box=document.getElementById('ytframe');
+  box.innerHTML='';
+  const f=document.createElement('iframe');
+  f.width='560'; f.height='315';
+  f.src='https://www.youtube.com/embed/'+id+'?autoplay=1&rel=0&playsinline=1&enablejsapi=1';
+  f.title='YouTube video player';
+  f.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+  f.referrerPolicy='strict-origin-when-cross-origin';
+  f.allowFullscreen=true;
+  f.style.cssText='width:100%;min-height:220px;height:100%;border:0';
+  box.appendChild(f);
 }
 function mountYt(id){
   const box=document.getElementById('ytframe');
+  if(!(window.YT&&YT.Player)){ embedIframe(id); typeHekate(); return; }
   box.innerHTML='';
   const host=document.createElement('div');
   host.id='ytplayer';
-  host.style.cssText='width:100%;min-height:270px;height:100%';
+  host.style.cssText='width:100%;min-height:220px;height:100%';
   box.appendChild(host);
   if(ytPlayer && ytPlayer.destroy){ try{ ytPlayer.destroy(); }catch(e){} }
   ytPlayer=new YT.Player('ytplayer',{
     width:560, height:315, videoId:id,
-    playerVars:{ autoplay:1, playsinline:1, rel:0, modestbranding:1, origin:location.origin },
+    playerVars:{ autoplay:1, playsinline:1, rel:0, modestbranding:1 },
     events:{
       onReady:e=>{ videoOn=true; hushDesk(); try{ e.target.setVolume(80); e.target.playVideo(); }catch(err){} typeHekate(); },
       onStateChange:e=>{
         if(e.data===1){ videoOn=true; hushDesk(); }
         if(e.data===0){ videoOn=false; runBrief(); }
       },
-      onError:()=>{ ytI++; if(ytI<ytIds.length) mountYt(ytIds[ytI]); else {
-        box.innerHTML='<p style="padding:12px;color:#9ab">This clip cannot embed. Use YouTube ↗</p>';
-      }}
+      onError:()=>{ ytI++; if(ytI<ytIds.length) mountYt(ytIds[ytI]); else embedIframe(id); }
     }
   });
 }
@@ -1201,6 +1211,8 @@ function paintNews(){
 async function openStory(st){
   if(!st){ say('Caught up. New headlines arrive every minute.'); return; }
   seen.add(st.title); seenSave();
+  say('CURRENT NEWS · '+st.title);
+  showVideo(st.title);
   let body=st.text;
   if(!body || body.length<70 || /^trending today/i.test(body)){
     const ex=await wikiExtract(st.title);
@@ -1209,12 +1221,10 @@ async function openStory(st){
   if(!body) body=st.title;
   const place=await locate(st.title+' '+body);
   flyTo(place, st.title, body);
-  showVideo(st.title);
 }
-function nextFresh(){ return liveStories.find(s=>!seen.has(s.title))||null; }
-function showStory(){ return openStory(nextFresh()); }
 let playI=0;
 async function playStory(step){
+  say(step?'Upcoming…':'CURRENT NEWS…');
   if(!liveStories.length) await loadToday();
   if(!liveStories.length){ say('No headline yet.'); return; }
   if(step) playI=(playI+1)%liveStories.length;
