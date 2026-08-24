@@ -5,232 +5,192 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>White Wings</title>
 <style>
-  :root { --g:#c9a227; --ink:#ece6dc; --d:#8a8490; }
+  :root { --g:#c9a227; --p:#6b3fa0; --p2:#2a1840; --ink:#f0eaf6; --d:#9a8eaa; }
   * { box-sizing:border-box; margin:0; }
-  html,body { height:100%; background:#04040a; color:var(--ink); font-family:system-ui,sans-serif; overflow:hidden; }
-  canvas { position:fixed; inset:0; cursor:grab; }
-  canvas.drag { cursor:grabbing; }
-  #hud { position:fixed; left:0; right:0; top:0; z-index:3; text-align:center; padding:.8rem 1rem 0;
-    pointer-events:none; }
-  h1 { font-weight:500; letter-spacing:.42em; font-size:.72rem; color:var(--g); }
-  .hint { color:var(--d); font-size:.78rem; margin-top:.3rem; pointer-events:none; }
-  #card { position:fixed; left:50%; bottom:7.2rem; transform:translateX(-50%); z-index:4;
-    width:min(420px,92vw); background:#0c0c12ee; border:1px solid #2a2430; border-radius:12px;
-    padding:.7rem .85rem; font-size:.84rem; line-height:1.4; display:none; }
-  #card b { color:var(--g); }
-  #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:4;
-    width:min(560px,96vw); padding:.55rem .7rem 1rem; background:linear-gradient(transparent,#04040a 30%); }
-  .row { display:flex; gap:6px; }
-  .stat { flex:1; background:#101016cc; border-radius:8px; padding:.35rem; text-align:center; }
+  html,body { height:100%; background:#12081c; color:var(--ink); font-family:ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
+  canvas { position:fixed; inset:0; z-index:0; }
+  #ui { position:relative; z-index:2; height:100%; display:flex; flex-direction:column; }
+  header { flex:0 0 auto; text-align:center; padding:1rem 1rem 0; }
+  h1 { font-weight:600; letter-spacing:.4em; font-size:.75rem; color:var(--g); }
+  .hint { color:var(--d); font-size:.8rem; margin-top:.35rem; }
+  #stage { flex:1 1 auto; position:relative; min-height:0; }
+  #world { position:absolute; left:50%; top:50%; width:min(52vmin,320px); height:min(52vmin,320px);
+    transform:translate(-50%,-50%); }
+  .halo { position:absolute; inset:-10%; border-radius:50%; pointer-events:none;
+    background:radial-gradient(circle, transparent 50%, #6b3fa033 58%, transparent 74%);
+    animation:pulse 7s ease-in-out infinite; }
+  .ringline { position:absolute; inset:4%; border-radius:50%; border:1px solid #c9a22744; pointer-events:none; }
+  .ringline.inner { inset:16%; border-color:#6b3fa055; }
+  .orbit { position:absolute; inset:0; border-radius:50%; animation:spin 48s linear infinite; }
+  .orbit.r { animation-duration:70s; animation-direction:reverse; }
+  .god { position:absolute; width:42px; height:42px; margin:-21px; border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, #3a2458, #160816);
+    border:1px solid var(--g); color:var(--g); font-size:7.5px; letter-spacing:.04em;
+    display:grid; place-items:center; cursor:pointer; text-align:center; line-height:1.05;
+    box-shadow:0 0 12px #6b3fa066; }
+  .god:hover { transform:scale(1.12); z-index:5; }
+  .earth { position:absolute; inset:23%; border-radius:50%; overflow:hidden;
+    background:radial-gradient(circle at 32% 26%, #c5e4ff, #4a88c8 30%, #1a3a68 60%, #0a1018);
+    box-shadow:inset -20px -14px 32px #000a, 0 0 40px #4a2a7a66; }
+  .land { position:absolute; inset:-26%;
+    background:
+      radial-gradient(ellipse 20% 13% at 28% 38%, #2f7a4acc 0 70%, transparent 71%),
+      radial-gradient(ellipse 24% 15% at 64% 54%, #1f5a38bb 0 70%, transparent 71%),
+      radial-gradient(ellipse 14% 10% at 48% 26%, #3a8a52aa 0 70%, transparent 71%);
+    animation:drift 40s linear infinite; }
+  .cloud { position:absolute; inset:0;
+    background:radial-gradient(circle at 24% 28%, #fff5, transparent 18%),
+               radial-gradient(circle at 70% 62%, #fff3, transparent 16%);
+    animation:drift 52s linear infinite reverse; }
+  .shade { position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(120deg, #fff2 0%, transparent 34%, #0008 78%, #000b 100%); }
+  .atmo { position:absolute; inset:-4%; border-radius:50%; pointer-events:none;
+    box-shadow:inset 0 0 16px #9ad0ff55, 0 0 20px #6b3fa044; }
+  .moon { position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; left:50%; top:50%;
+    background:radial-gradient(circle at 35% 30%, #f4eefc, #8a7a9a); box-shadow:0 0 10px #fff4;
+    animation:lun 20s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @keyframes drift { to { transform:rotate(10deg) translateX(-8%); } }
+  @keyframes pulse { 50% { opacity:.5; } }
+  @keyframes lun { from { transform:rotate(0) translateX(min(32vmin,200px)); } to { transform:rotate(360deg) translateX(min(32vmin,200px)); } }
+  #orb { position:absolute; left:50%; top:50%; width:68px; height:68px; transform:translate(-50%,-50%);
+    border:0; border-radius:50%; cursor:pointer; z-index:4;
+    background:radial-gradient(circle at 32% 28%, #fff0c4, #e0b84a 40%, #8a6a20);
+    color:#1a1408; font-weight:700; letter-spacing:.08em; font-size:.7rem;
+    box-shadow:0 0 26px #c9a22799; }
+  #orb:active { transform:translate(-50%,-50%) scale(.94); }
+  footer { flex:0 0 auto; padding:.55rem 1rem 1rem; max-width:540px; margin:0 auto; width:100%; }
+  .row { display:flex; gap:8px; }
+  .stat { flex:1; background:#1a1028cc; border:1px solid #2a1840; border-radius:10px; padding:.4rem; text-align:center; }
   .stat b { display:block; }
   .stat span { font-size:.58rem; color:var(--d); letter-spacing:.08em; text-transform:uppercase; }
-  .buys { display:flex; gap:6px; margin-top:.4rem; }
-  button { font:inherit; cursor:pointer; }
-  .buy { flex:1; text-align:left; padding:.4rem .5rem; border-radius:8px; border:1px solid #2a2430;
-    background:#101016cc; color:var(--ink); }
-  .buy.go { border-color:var(--g); }
-  .buy:disabled { opacity:.35; }
-  .buy small { display:block; color:var(--d); }
-  .adv { display:flex; gap:5px; margin-top:.35rem; }
-  .adv button { flex:1; border:1px solid #2a2430; background:#0c0c12cc; color:var(--g);
-    border-radius:999px; padding:.32rem .4rem; font-size:.72rem; }
-  #say { min-height:2.4em; text-align:center; font-size:.8rem; color:#c4b8c8; margin:.35rem 0; }
+  .bar { height:5px; background:#1a1020; border-radius:6px; overflow:hidden; margin:.4rem 0; }
+  .bar i { display:block; height:100%; width:0; background:linear-gradient(90deg,#4a2870,var(--g)); }
+  .buys,.adv { display:flex; gap:6px; margin-top:.4rem; }
+  button.buy { flex:1; text-align:left; padding:.45rem .55rem; border-radius:10px;
+    border:1px solid #3a2458; background:#1a1028cc; color:var(--ink); font:inherit; cursor:pointer; }
+  button.buy.go { border-color:var(--g); }
+  button.buy:disabled { opacity:.35; }
+  button.buy small { display:block; color:var(--d); }
+  #say { min-height:3.1em; color:#d4c8e0; font-size:.82rem; margin:.4rem 0; line-height:1.4; text-align:center; }
+  .adv button { flex:1; border:1px solid #3a2458; background:#140c20cc; color:var(--g);
+    border-radius:999px; padding:.36rem; cursor:pointer; font-size:.74rem; }
 </style>
 </head>
 <body>
-<canvas id="g"></canvas>
-<div id="hud">
-  <h1>WHITE WINGS</h1>
-  <p class="hint">Drag to turn the world. Scroll to zoom. Click land. Space = sun.</p>
-</div>
-<div id="card"></div>
-<div id="bar">
-  <div class="row">
-    <div class="stat"><span>Light</span><b id="lum">0</b></div>
-    <div class="stat"><span>/sec</span><b id="lps">0</b></div>
-    <div class="stat"><span>Level</span><b id="lvl">1</b></div>
-    <div class="stat"><span>Visited</span><b id="vis">0</b></div>
+<canvas id="stars"></canvas>
+<div id="ui">
+  <header>
+    <h1>WHITE WINGS</h1>
+    <p class="hint">Click the sun. Tap a name on the rim. 2026 is already in the room.</p>
+  </header>
+  <div id="stage">
+    <div id="world">
+      <div class="halo"></div>
+      <div class="ringline"></div>
+      <div class="ringline inner"></div>
+      <div class="orbit" id="o1"></div>
+      <div class="orbit r" id="o2"></div>
+      <div class="earth"><div class="land"></div><div class="cloud"></div><div class="shade"></div><div class="atmo"></div></div>
+      <div class="moon"></div>
+    </div>
+    <button id="orb" type="button">CLICK</button>
   </div>
-  <p id="say">The planet is the board. The seats still walk the dark.</p>
-  <div class="buys">
-    <button class="buy" id="bAuto"><b>Collect away</b><small>15</small></button>
-    <button class="buy" id="bClick"><b>Stronger sun</b><small>20</small></button>
-    <button class="buy" id="bHalo"><b>Brighter halo</b><small>30</small></button>
-  </div>
-  <div class="adv">
-    <button type="button" data-ask="hekate">Hekate</button>
-    <button type="button" data-ask="board">Board</button>
-    <button type="button" data-ask="paimon">Paimon</button>
-    <button type="button" id="bDay">Today</button>
-  </div>
+  <footer>
+    <div class="row">
+      <div class="stat"><span>Light</span><b id="lum">0</b></div>
+      <div class="stat"><span>/ sec</span><b id="lps">0</b></div>
+      <div class="stat"><span>Level</span><b id="lvl">1</b></div>
+    </div>
+    <div class="bar"><i id="xp"></i></div>
+    <p id="say">Eight walk the rim. August 2026 — the world learned to turn in a browser.</p>
+    <div class="buys">
+      <button class="buy" id="bAuto" type="button"><b>Collect away</b><small>15</small></button>
+      <button class="buy" id="bClick" type="button"><b>Stronger click</b><small>20</small></button>
+      <button class="buy" id="bHalo" type="button"><b>Brighter halo</b><small>30</small></button>
+    </div>
+    <div class="adv">
+      <button type="button" data-ask="hekate">Ask Hekate</button>
+      <button type="button" data-ask="board">Board</button>
+      <button type="button" data-ask="paimon">Paimon</button>
+    </div>
+  </footer>
 </div>
 <script>
-/* compact public atlas — order-of-magnitude figures, not a census */
-const N=[
-{n:'Egypt',cap:'Cairo',p:'110m',la:26,lo:30,r:'Africa',note:'Nile cities; Arabic is widely spoken.'},
-{n:'Nigeria',cap:'Abuja',p:'220m',la:9,lo:8,r:'Africa',note:'Many languages and peoples; Lagos is a giant port-city.'},
-{n:'Kenya',cap:'Nairobi',p:'55m',la:0,lo:38,r:'Africa',note:'Highlands, savanna, Indian Ocean coast.'},
-{n:'South Africa',cap:'Pretoria',p:'60m',la:-29,lo:24,r:'Africa',note:'Several official languages; Cape to highveld.'},
-{n:'Morocco',cap:'Rabat',p:'37m',la:32,lo:-6,r:'Africa',note:'Atlas mountains meet Atlantic and Mediterranean.'},
-{n:'France',cap:'Paris',p:'68m',la:47,lo:2,r:'Europe',note:'A republic of regions from Alps to Atlantic.'},
-{n:'Germany',cap:'Berlin',p:'84m',la:51,lo:10,r:'Europe',note:'Federal states; Rhine to Baltic.'},
-{n:'Italy',cap:'Rome',p:'59m',la:43,lo:12,r:'Europe',note:'Peninsula and islands; many historic city-states.'},
-{n:'United Kingdom',cap:'London',p:'68m',la:54,lo:-2,r:'Europe',note:'Island nations; many languages in the cities.'},
-{n:'Spain',cap:'Madrid',p:'48m',la:40,lo:-4,r:'Europe',note:'Iberia; several co-official languages.'},
-{n:'Poland',cap:'Warsaw',p:'38m',la:52,lo:19,r:'Europe',note:'Plain between two seas.'},
-{n:'Ukraine',cap:'Kyiv',p:'38m',la:49,lo:32,r:'Europe',note:'Steppe and black earth; Dnipro cities.'},
-{n:'Turkey',cap:'Ankara',p:'85m',la:39,lo:35,r:'Asia',note:'Bridge of two continents; many highland towns.'},
-{n:'Russia',cap:'Moscow',p:'144m',la:60,lo:40,r:'Eurasia',note:'Vast; many republics and languages across eleven hours.'},
-{n:'India',cap:'New Delhi',p:'1.4b',la:22,lo:79,r:'Asia',note:'A union of states; hundreds of languages.'},
-{n:'China',cap:'Beijing',p:'1.4b',la:35,lo:105,r:'Asia',note:'Many provinces and peoples; long written record.'},
-{n:'Japan',cap:'Tokyo',p:'125m',la:36,lo:138,r:'Asia',note:'Archipelago; dense coastal cities.'},
-{n:'Indonesia',cap:'Jakarta',p:'275m',la:-2,lo:118,r:'Asia',note:'Thousands of islands; many ethnic groups.'},
-{n:'Iran',cap:'Tehran',p:'89m',la:32,lo:53,r:'Asia',note:'Plateau and ranges; Persian literary tradition.'},
-{n:'Saudi Arabia',cap:'Riyadh',p:'36m',la:24,lo:45,r:'Asia',note:'Peninsula; desert cities and Red Sea ports.'},
-{n:'Pakistan',cap:'Islamabad',p:'240m',la:30,lo:69,r:'Asia',note:'Indus plain and high mountains.'},
-{n:'Bangladesh',cap:'Dhaka',p:'170m',la:24,lo:90,r:'Asia',note:'Delta cities; one of the densest lowlands.'},
-{n:'Vietnam',cap:'Hanoi',p:'100m',la:16,lo:106,r:'Asia',note:'Long coast; highlands and river mouths.'},
-{n:'Thailand',cap:'Bangkok',p:'72m',la:15,lo:101,r:'Asia',note:'Gulf and hills; a central river plain.'},
-{n:'Australia',cap:'Canberra',p:'27m',la:-25,lo:134,r:'Oceania',note:'Coastal cities; an old, dry interior.'},
-{n:'New Zealand',cap:'Wellington',p:'5m',la:-41,lo:174,r:'Oceania',note:'Two main islands; Pacific meeting Tasman.'},
-{n:'United States',cap:'Washington',p:'330m',la:38,lo:-97,r:'Americas',note:'A federation; many immigrant and native peoples.'},
-{n:'Canada',cap:'Ottawa',p:'40m',la:56,lo:-106,r:'Americas',note:'From Atlantic to Pacific; official bilingual cities.'},
-{n:'Mexico',cap:'Mexico City',p:'130m',la:23,lo:-102,r:'Americas',note:'High plateau and coasts; many indigenous nations.'},
-{n:'Brazil',cap:'Brasília',p:'215m',la:-10,lo:-52,r:'Americas',note:'Amazon to Atlantic; Portuguese-speaking federation.'},
-{n:'Argentina',cap:'Buenos Aires',p:'46m',la:-34,lo:-64,r:'Americas',note:'Pampas and Andes; a long southern cone.'},
-{n:'Chile',cap:'Santiago',p:'20m',la:-33,lo:-71,r:'Americas',note:'A thin country of desert, valley, and ice.'},
-{n:'Colombia',cap:'Bogotá',p:'52m',la:4,lo:-73,r:'Americas',note:'Andes and two oceans.'},
-{n:'Peru',cap:'Lima',p:'34m',la:-10,lo:-75,r:'Americas',note:'Coast, sierra, and rainforest.'},
-{n:'Greenland',cap:'Nuuk',p:'56k',la:72,lo:-42,r:'Arctic',note:'Ice sheet; Inuit towns on the rim.'}
+const GODS=[
+  {id:'astarte', n:'ASTARTE', o:1, a:0},
+  {id:'asmodeus', n:'HEAT', o:1, a:90},
+  {id:'amun', n:'AMUN', o:1, a:180},
+  {id:'paimon', n:'PAIMON', o:1, a:270},
+  {id:'anubis', n:'ANUBIS', o:2, a:45},
+  {id:'tut', n:'TUT', o:2, a:135},
+  {id:'maat', n:'MAAT', o:2, a:225},
+  {id:'hekate', n:'HEKATE', o:2, a:315}
 ];
-const LAND=[
-  {la:10,lo:20,rx:28,ry:18}, {la:50,lo:15,rx:18,ry:10}, {la:60,lo:90,rx:40,ry:12},
-  {la:35,lo:90,rx:32,ry:16}, {la:-20,lo:130,rx:18,ry:14}, {la:45,lo:-100,rx:28,ry:14},
-  {la:20,lo:-100,rx:16,ry:12}, {la:-10,lo:-58,rx:22,ry:18}, {la:-25,lo:25,rx:14,ry:16}
-];
-const c=document.getElementById('g'), x=c.getContext('2d');
-let W,H,lon0=20, lat0=12, z=1, drag=false, lx,ly;
-function size(){ W=c.width=innerWidth; H=c.height=innerHeight; }
+const LINE={
+  astarte:'ASTARTE · 2026: a city is still a vow. White Wings kept one street: click, then listen.',
+  asmodeus:'ASMODEUS · leftover Heat became the idle sun. Spend it or it compounds crimson.',
+  amun:'AMUN-RA · the brightest 2026 move was unpublished. The public page shows only the planet.',
+  anubis:'ANUBIS · we filed the desk, the bank, the cour. What died was the blob-globe. Weighed. Buried.',
+  tut:'TUT · restore the spinning world. Continents as weather, not blocks. The old version returns.',
+  maat:'MAAT · tilt is healthy. Perfect UI is death. Purple so we do not copy a gray site.',
+  hekate:'HEKATE · 2026 hinge: play in the light, workshop in the dark. Pick the hinge, not a face.',
+  paimon:'PAIMON · I announced the moon, the glove, the cour through EP10. The band is still lost. Good.',
+  board:'Board · 2026: vow the street, hide the workshop, weigh the Heat, restore the spin, keep the tilt.'
+};
+GODS.forEach(g=>{
+  const d=document.createElement('button');
+  d.className='god'; d.type='button'; d.textContent=g.n;
+  const r=g.o===1?48:36, rad=g.a*Math.PI/180;
+  d.style.left=(50+r*Math.cos(rad))+'%';
+  d.style.top=(50+r*Math.sin(rad))+'%';
+  d.onclick=()=>say(LINE[g.id]);
+  document.getElementById(g.o===1?'o1':'o2').appendChild(d);
+});
+function say(t){ document.getElementById('say').textContent=t; }
+document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>say(LINE[b.dataset.ask]||LINE.board));
+
+const c=document.getElementById('stars'),x=c.getContext('2d');
+const ST=[...Array(160)].map(()=>({x:Math.random(),y:Math.random(),z:Math.random()*1.4+.2}));
+function size(){ c.width=innerWidth; c.height=innerHeight; }
 addEventListener('resize',size); size();
-function proj(la,lo){
-  let L=((lo-lon0+540)%360)-180;
-  const x0=W/2 + (L/180)*W*0.42*z;
-  const y0=H*0.42 - (la-lat0)/90*H*0.38*z;
-  return [x0,y0];
-}
-function unproj(px,py){
-  const L=((px-W/2)/(W*0.42*z))*180;
-  const la=lat0 - ((py-H*0.42)/(H*0.38*z))*90;
-  let lo=lon0+L; while(lo>180)lo-=360; while(lo<-180)lo+=360;
-  return [la,lo];
-}
-function draw(){
-  x.fillStyle='#04040a'; x.fillRect(0,0,W,H);
-  for(let i=0;i<90;i++){
-    const [sx,sy]=[Math.random()*W, Math.random()*H];
-    x.fillStyle='rgba(220,220,230,.18)'; x.fillRect(sx,sy,1,1);
-  }
-  /* ocean disc */
-  const [cx,cy]=proj(lat0,lon0);
-  const R=Math.min(W,H)*0.38*z;
-  const g=x.createRadialGradient(cx-R*0.2,cy-R*0.25,R*0.1,cx,cy,R);
-  g.addColorStop(0,'#3a7ab8'); g.addColorStop(.55,'#143868'); g.addColorStop(1,'#071018');
-  x.beginPath(); x.arc(cx,cy,R,0,Math.PI*2); x.fillStyle=g; x.fill();
-  x.strokeStyle='#c9a22733'; x.lineWidth=2; x.stroke();
-  /* continents */
-  LAND.forEach(L=>{
-    const [px,py]=proj(L.la,L.lo);
-    x.fillStyle='#2a6a44';
-    x.beginPath(); x.ellipse(px,py,R*L.rx/50,R*L.ry/50,0,0,Math.PI*2); x.fill();
-    x.fillStyle='#1a4a30aa';
-    x.beginPath(); x.ellipse(px,py-R*L.ry/90,R*L.rx/80,R*L.ry/90,0,0,Math.PI*2); x.fill();
-  });
-  /* night shade */
-  x.fillStyle='#0006';
-  x.beginPath(); x.arc(cx+R*0.25,cy+R*0.1,R, -Math.PI/2, Math.PI/2); x.fill();
-  /* cities */
-  N.forEach(n=>{
-    const [px,py]=proj(n.la,n.lo);
-    const d=Math.hypot(px-cx,py-cy);
-    if(d>R-2) return;
-    x.fillStyle=s.seen[n.n]?'#c9a227':'#e8e4dc';
-    x.beginPath(); x.arc(px,py, z>1.4?2.4:1.7,0,Math.PI*2); x.fill();
+(function draw(){
+  x.fillStyle='#12081c'; x.fillRect(0,0,c.width,c.height);
+  ST.forEach(s=>{ s.y+=s.z*.00008; if(s.y>1)s.y=0;
+    x.fillStyle=`rgba(232,220,245,${.16+s.z*.45})`;
+    x.fillRect(s.x*c.width,s.y*c.height,s.z,s.z);
   });
   requestAnimationFrame(draw);
-}
-function nearest(px,py){
-  const [la,lo]=unproj(px,py);
-  let best=null, bd=1e9;
-  N.forEach(n=>{
-    const d=Math.hypot(n.la-la,(n.lo-lo)*Math.cos(la*Math.PI/180));
-    if(d<bd){ bd=d; best=n; }
-  });
-  return bd<18?best:null;
-}
-function show(n){
-  const el=document.getElementById('card');
-  el.style.display='block';
-  el.innerHTML='<b>'+n.n+'</b> · '+n.r+'<br>Capital '+n.cap+' · about '+n.p+' people<br>'+n.note;
-}
-c.addEventListener('pointerdown',e=>{ drag=true; c.classList.add('drag'); lx=e.clientX; ly=e.clientY; });
-addEventListener('pointerup',()=>{ drag=false; c.classList.remove('drag'); });
-addEventListener('pointermove',e=>{
-  if(!drag) return;
-  lon0-=(e.clientX-lx)*0.18/z; lat0+=(e.clientY-ly)*0.12/z;
-  lat0=Math.max(-60,Math.min(70,lat0)); lx=e.clientX; ly=e.clientY;
-});
-c.addEventListener('wheel',e=>{
-  e.preventDefault(); z=Math.max(0.8,Math.min(3.2,z+(e.deltaY<0?0.12:-0.12)));
-},{passive:false});
-c.addEventListener('click',e=>{
-  if(Math.hypot(e.clientX-lx,e.clientY-ly)>8 && lx) return;
-  const n=nearest(e.clientX,e.clientY);
-  if(!n){ document.getElementById('card').style.display='none'; return; }
-  show(n);
-  if(!s.seen[n.n]){ s.seen[n.n]=1; s.lumen+=2; say('You set foot in '+n.n+'.'); }
-  save(); render();
-});
-
-const ASK={hekate:'Pick the hinge, not a face.',paimon:'I announced a border. It moved.',board:'Vow · heat · hide · weigh · restore · tilt.'};
-async function wikiDay(){
-  const n=new Date();
-  const r=await fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${n.getUTCMonth()+1}/${n.getUTCDate()}`);
-  const j=await r.json();
-  const ev=(j.events||[])[Math.floor(Math.random()*(j.events||[]).length)];
-  return ev?ev.year+': '+(ev.text||'').slice(0,160):'Quiet day.';
-}
-document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>say(ASK[b.dataset.ask]||''));
-document.getElementById('bDay').onclick=async()=>{ try{ say(await wikiDay()); }catch(e){ say('The archive blinked.'); } };
+})();
 
 function load(){ try{return JSON.parse(localStorage.getItem('ww_public')||'');}catch(e){return null;} }
-const s=Object.assign({lumen:0,clicks:0,xp:0,level:1,auto:0,click:0,halo:0,seen:{},t:Date.now()},load()||{});
-if(!s.seen) s.seen={};
+const s=Object.assign({lumen:0,clicks:0,xp:0,level:1,auto:0,click:0,halo:0,t:Date.now()},load()||{});
 function save(){ s.t=Date.now(); localStorage.setItem('ww_public',JSON.stringify(s)); }
 function cost(b,lv){ return Math.max(1,Math.floor(b*Math.pow(1.18,lv))); }
 function pow(){ return 1+s.click+s.halo*0.25; }
 function lps(){ return (s.auto*0.4)*(1+s.halo*0.05); }
 function need(){ return 20+s.level*15; }
 function fmt(n){ return n>=1000?n.toFixed(1):Math.floor(n*10)/10; }
-function say(t){ document.getElementById('say').textContent=t; }
 function render(){
   document.getElementById('lum').textContent=fmt(s.lumen);
   document.getElementById('lps').textContent=fmt(lps());
   document.getElementById('lvl').textContent=s.level;
-  document.getElementById('vis').textContent=Object.keys(s.seen).length;
+  document.getElementById('xp').style.width=Math.min(100,s.xp/need()*100)+'%';
   [['bAuto',15,'auto'],['bClick',20,'click'],['bHalo',30,'halo']].forEach(([id,b,k])=>{
     const el=document.getElementById(id);
     el.disabled=s.lumen<cost(b,s[k]); el.classList.toggle('go',!el.disabled);
     el.querySelector('small').textContent=cost(b,s[k]);
   });
 }
-function addXp(n){ s.xp=(s.xp||0)+n; while(s.xp>=need()){ s.xp-=need(); s.level++; say('Level '+s.level); } }
-addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); s.lumen+=pow(); s.clicks++; addXp(1); save(); render(); }});
+function addXp(n){ s.xp+=n; while(s.xp>=need()){ s.xp-=need(); s.level++; say('Level '+s.level+' · 2026 still turning.'); } }
+document.getElementById('orb').onclick=()=>{ s.lumen+=pow(); s.clicks++; addXp(1); save(); render(); };
+addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); document.getElementById('orb').click(); }});
 document.getElementById('bAuto').onclick=()=>{ const c=cost(15,s.auto); if(s.lumen<c)return; s.lumen-=c; s.auto++; save(); render(); };
 document.getElementById('bClick').onclick=()=>{ const c=cost(20,s.click); if(s.lumen<c)return; s.lumen-=c; s.click++; save(); render(); };
 document.getElementById('bHalo').onclick=()=>{ const c=cost(30,s.halo); if(s.lumen<c)return; s.lumen-=c; s.halo++; save(); render(); };
 (function(){ const dt=Math.min(8*3600,(Date.now()-(s.t||Date.now()))/1000); const g=lps()*dt; if(g>1){ s.lumen+=g; say('While away +'+fmt(g)); }})();
 setInterval(()=>{ s.lumen+=lps(); if(lps()>0) addXp(0.04); save(); render(); },1000);
-render(); draw();
+render();
 </script>
 </body>
 </html>
