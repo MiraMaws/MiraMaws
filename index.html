@@ -798,11 +798,26 @@ function pickHits(obj, out){
       const p=dur.split(':').map(Number);
       dur=p.length===3?p[0]*3600+p[1]*60+p[2]:p[0]*60+(p[1]||0);
     }
-    out.push({id:vid, dur:+dur||0});
+    out.push({id:vid, dur:+dur||0, views:+(v.views||v.viewCount||v.viewcount||0)||0});
   });
   const dump=JSON.stringify(obj);
   const re=/"videoId"\s*:\s*"([\w-]{11})"/g; let m;
-  while((m=re.exec(dump))) out.push({id:m[1], dur:0});
+  while((m=re.exec(dump))) out.push({id:m[1], dur:0, views:0});
+}
+function rankHits(hits){
+  const map={};
+  hits.forEach(h=>{
+    if(!h||!h.id||!/^[\w-]{11}$/.test(h.id)||/^[0_]{11}$/.test(h.id)) return;
+    const prev=map[h.id]||{id:h.id, dur:0, views:0};
+    prev.dur=Math.max(prev.dur, +h.dur||0);
+    prev.views=Math.max(prev.views, +h.views||0);
+    map[h.id]=prev;
+  });
+  return Object.values(map).sort((a,b)=>{
+    const as=(a.dur>=20&&a.dur<=120)?1:0, bs=(b.dur>=20&&b.dur<=120)?1:0;
+    if(as!==bs) return bs-as;
+    return (b.views||0)-(a.views||0);
+  }).map(h=>h.id).slice(0,16);
 }
 async function findYtIds(query){
   const q=encodeURIComponent(String(query||'world news'));
@@ -825,12 +840,7 @@ async function findYtIds(query){
     new Promise(res=>setTimeout(()=>res([]), 4500))
   ]).catch(()=>[]));
   const batches=await Promise.all(jobs);
-  const hits=[].concat(...batches);
-  const short=hits.filter(h=>h.dur>=20 && h.dur<=120);
-  const rest=hits.filter(h=>!(h.dur>=20 && h.dur<=120));
-  const ids=[];
-  [...short, ...rest].forEach(h=>{ if(h.id&&!ids.includes(h.id)) ids.push(h.id); });
-  return ids.filter(id=>/^[\w-]{11}$/.test(id)&&!/^[0_]{11}$/.test(id)).slice(0,16);
+  return rankHits([].concat(...batches));
 }
 function embedIframe(id){
   const box=document.getElementById('ytframe');
@@ -1360,9 +1370,11 @@ const MEME_Q=[
   'dank memes today short',
   'best memes this week shorts',
   'vine boom meme',
-  'reddit memes compilation',
-  'tiktok meme compilation funny',
-  'shitpost meme short'
+  'reddit funny moments compilation short',
+  'youtube shorts memes today',
+  'shitpost meme short',
+  'wholesome meme compilation short',
+  'viral meme 2026 short'
 ];
 let memeI=0;
 const memeBank=[];
