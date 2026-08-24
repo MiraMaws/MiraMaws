@@ -91,10 +91,17 @@
   <div class="mrow"><span>Quakes (wk)</span><b id="mQ">…</b></div>
   <p id="sync">sync —</p>
   <h2>ADVISORY</h2>
-  <button class="item" data-ask="hekate">Ask Hekate</button>
-  <button class="item" data-ask="board">Board</button>
+  <button class="item" data-ask="astarte">Astarte</button>
+  <button class="item" data-ask="asmodeus">Asmodeus</button>
+  <button class="item" data-ask="amun">Amun-Ra</button>
+  <button class="item" data-ask="anubis">Anubis</button>
+  <button class="item" data-ask="tut">Tut</button>
+  <button class="item" data-ask="maat">Maat</button>
+  <button class="item" data-ask="hekate">Hekate</button>
   <button class="item" data-ask="paimon">Paimon</button>
+  <button class="item" data-ask="board">Board</button>
   <button class="item" id="bDay">Today — fly to the day</button>
+  <svg id="spark" viewBox="0 0 220 56" width="100%" height="56" style="margin-top:8px;background:#08080c;border-radius:8px"></svg>
 </aside>
 <aside class="side" id="right">
   <h1>2026 BOARD</h1>
@@ -164,11 +171,29 @@ const HEX=[...Array(80)].map((_,i)=>{
   const p=PLACES[i%PLACES.length];
   return {lat:p.lat+(Math.random()-0.5)*8, lng:p.lng+(Math.random()-0.5)*10};
 });
-const LINE={
-  hekate:'HEKATE · 2026 hinge: zoom is a door. Today is a country, not a slogan.',
-  paimon:'PAIMON · I announced the gold pins. You are late to the fly-to. Good.',
-  board:'Board · vow the street, hide the workshop, weigh Heat, restore spin, keep tilt.'
-};
+function clip(t){ return String(t||'').replace(/\s+/g,' ').slice(0,90); }
+function planetNote(){
+  const q=document.getElementById('mQ').textContent;
+  const o=document.getElementById('mOrb').textContent;
+  return 'Quakes this week '+q+'. Orbit '+o+'.';
+}
+function voice(id){
+  const ev=clip(lastEvent.title);
+  const bit=clip(lastEvent.extra);
+  const here=lastEvent.place?(lastEvent.place.c||lastEvent.place.name):'the rim';
+  const g={
+    astarte:'ASTARTE · '+here+' is still a vow. 2026: '+ev+'. Keep the street, not the slogan.',
+    asmodeus:'ASMODEUS · leftover Heat in '+here+'. '+planetNote()+' Spend it or it compounds crimson.',
+    amun:'AMUN-RA · the brightest part of '+ev+' is unpublished. File it. Do not parade it.',
+    anubis:'ANUBIS · I weighed '+ev+'. What died there — did we name it? '+bit,
+    tut:'TUT · restore one name under '+ev+'. The archive is a living mouth.',
+    maat:'MAAT · tilt, not a verdict. '+planetNote()+' Perfect balance would stop the year.',
+    hekate:'HEKATE · hinge at '+here+'. After '+ev+', pick a door. Zoom is how we enter.',
+    paimon:'PAIMON · I announced '+ev+' too loud. The band is already in '+here+'. You are late. Good.',
+    board:'Board · vow '+here+' · hide the workshop · weigh Heat · restore the name · keep the tilt.'
+  };
+  return g[id]||g.board;
+}
 
 const world=Globe()(document.getElementById('globe'))
   .globeImageUrl(TEX.natural)
@@ -195,13 +220,15 @@ world.controls().autoRotateSpeed=0.4;
 world.pointOfView({lat:18,lng:20,altitude:2.4});
 
 function say(t){ document.getElementById('say').textContent=t; }
+let lastEvent={title:'the quiet spinning of 2026', extra:'No pin yet. The planet is still the room.', place:null};
 function flyTo(p, title, extra){
   world.pointOfView({lat:p.lat,lng:p.lng,altitude:0.85}, 1600);
   document.getElementById('alt').value=0.85;
   document.getElementById('altN').textContent='0.85';
   if(!s.seen[p.name]){ s.seen[p.name]=1; s.lumen+=3; save(); render(); }
   world.htmlElementsData([{lat:p.lat,lng:p.lng,name:p.name,c:p.c,pop:p.pop,extra:extra||''}]);
-  say((title||p.name)+' — the world turned to face it.');
+  lastEvent={title:title||p.name, extra:extra||'', place:p};
+  say((title||p.name)+' — the world turned. Ask a seat.');
 }
 world.htmlElement(d=>{
   const el=document.createElement('div');
@@ -348,7 +375,28 @@ document.getElementById('spin').oninput=e=>{
 };
 document.getElementById('tL').onclick=()=>{ document.getElementById('left').classList.toggle('hideL'); document.body.classList.toggle('lOff'); };
 document.getElementById('tR').onclick=()=>{ document.getElementById('right').classList.toggle('hideR'); document.body.classList.toggle('rOff'); };
-document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>say(LINE[b.dataset.ask]));
+document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>say(voice(b.dataset.ask)));
+const SEATS=['astarte','asmodeus','amun','anubis','tut','maat','hekate','paimon'];
+let seatI=0;
+setInterval(()=>say(voice(SEATS[seatI++%SEATS.length])), 48000);
+function drawSpark(){
+  const svg=document.getElementById('spark'); if(!svg) return;
+  const t=new Date(), doy=Math.floor((t-new Date(t.getFullYear(),0,0))/86400000);
+  const pts=[];
+  for(let i=0;i<5;i++){
+    const day=doy- (4-i)*30;
+    const seas=Math.sin((day-120)*2*Math.PI/365.25);
+    pts.push(425.4+seas*2.85);
+  }
+  const mn=Math.min(...pts)-0.4, mx=Math.max(...pts)+0.4;
+  const w=220,h=56;
+  const d=pts.map((v,i)=>{
+    const x=(i/4)*w, y=h-8-((v-mn)/(mx-mn))*(h-16);
+    return x+','+y;
+  }).join(' ');
+  svg.innerHTML='<polyline fill="none" stroke="#c9a227" stroke-width="1.6" points="'+d+'"/>';
+}
+drawSpark();
 
 function load(){ try{return JSON.parse(localStorage.getItem('ww_public')||'');}catch(e){return null;} }
 const s=Object.assign({lumen:0,clicks:0,xp:0,level:1,auto:0,click:0,halo:0,seen:{},t:Date.now()},load()||{});
