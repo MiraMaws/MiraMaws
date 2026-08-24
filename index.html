@@ -1416,7 +1416,8 @@ if(window.matchMedia && matchMedia('(max-width:820px)').matches){
   document.getElementById('right').classList.add('hideR');
 }
 loadToday().then(()=>{ paintNews(); return syncEarth(); });
-setInterval(()=>{ loadToday().then(()=>{ paintNews(); return syncEarth(); }); }, 60000);
+setInterval(()=>{ loadToday().then(()=>paintNews()); }, 10000);
+setInterval(()=>{ syncEarth(); }, 60000);
 
 const TICKS=['AAPL','MSFT','NVDA','GOOGL','AMZN','META','TSLA','BRK-B','JPM','V','UNH','XOM','JNJ','WMT','BTC-USD','ETH-USD','GC=F','SI=F','^GSPC','EURUSD=X'];
 let mkOff=0;
