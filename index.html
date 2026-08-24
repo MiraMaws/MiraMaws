@@ -165,7 +165,7 @@
   }
   #locTab {
     position:fixed; left:50%; top:38%; z-index:8; display:none; pointer-events:none;
-    transform:translate(80px,-20px); min-width:160px; max-width:240px;
+    transform:translate(80px,-20px); min-width:160px; max-width:280px;
     padding:8px 10px; background:#06140ee8; border:1px solid #2dff7a;
     box-shadow:0 0 16px #2dff7a44, inset 0 0 12px #0008; color:#b8ffd4;
     font-size:11px; letter-spacing:.06em;
@@ -626,6 +626,7 @@ function miraSpeak(title, body){
 }
 if(window.speechSynthesis) speechSynthesis.addEventListener('voiceschanged', ()=>{});
 let lastEvent={title:'the quiet spinning of 2026', extra:'No pin yet. The planet is still the room.', place:null};
+let lastSource=null;
 let sfxCtx=null;
 function sfx(kind){
   if(videoOn) return;
@@ -695,8 +696,10 @@ function markPlace(p){
   }catch(e){}
   const tab=document.getElementById('locTab');
   if(tab){
-    tab.innerHTML='<b>'+(p.c||p.name||'SITE').toUpperCase()+'</b>'+(p.name||'')+' · '+popPretty(p)+' population';
-    tab.style.display='block';
+    if(!paintSource(lastSource)){
+      tab.innerHTML='<b>'+(p.c||p.name||'SITE').toUpperCase()+'</b>'+(p.name||'')+' · '+popPretty(p)+' population';
+      tab.style.display='block';
+    }
   }
   sfx('zoom');
   setTimeout(()=>sfx('pop'), 280);
@@ -707,7 +710,7 @@ function fillCensus(){
   PLACES.slice().sort((a,b)=>popNum(b)-popNum(a)).forEach(p=>{
     const d=document.createElement('div'); d.className='mk';
     d.innerHTML='<b>'+p.name+'</b><span class="px">'+p.c+' · '+(p.pop||'?')+'</span>';
-    d.onclick=()=>flyTo(p, p.name+' · '+p.c, p.name+', '+p.c+' — '+popPretty(p)+' population.');
+    d.onclick=()=>{ lastSource=null; flyTo(p, p.name+' · '+p.c, p.name+', '+p.c+' — '+popPretty(p)+' population.'); };
     host.appendChild(d);
   });
 }
@@ -733,7 +736,9 @@ function flyTo(p, title, extra){
   markPlace(p);
   const pin=document.getElementById('pin');
   document.getElementById('pinT').textContent=title||p.name||'Pin';
-  document.getElementById('pinM').textContent=((p.name||'')+(p.c?(' · '+p.c):''))+(p.pop?(' · '+p.pop):'');
+  if(!paintSource(lastSource)){
+    document.getElementById('pinM').textContent=((p.name||'')+(p.c?(' · '+p.c):''))+(p.pop?(' · '+p.pop):'');
+  }
   document.getElementById('pinB').textContent=strip(extra||title||'');
   pin.style.display='block';
   requestAnimationFrame(()=>pin.classList.add('on'));
@@ -1071,13 +1076,43 @@ function topicOf(title, text){
 function topicBoost(tag){
   return ({'White House':8,'America':6,'China':6,'Musk':7,'Space':6,'AI':7,'World':1})[tag]||1;
 }
-function pushStory(title, text, views){
+function hostOf(u){
+  try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return ''; }
+}
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function sourceBits(src){
+  if(!src) return null;
+  const brand=src.brand||src.site||'';
+  if(!brand && !src.site && !src.person) return null;
+  return {
+    brand: brand||'Source',
+    site: src.site||'',
+    person: src.person||'',
+    date: src.date||todayISO(),
+    url: src.url||''
+  };
+}
+function paintSource(src){
+  const s=sourceBits(src);
+  if(!s) return false;
+  lastSource=src;
+  const line=[s.site, s.person, s.date].filter(Boolean).join(' · ');
+  const tab=document.getElementById('locTab');
+  if(tab){
+    tab.innerHTML='<b>'+s.brand.toUpperCase()+'</b>'+line;
+    tab.style.display='block';
+  }
+  const pinM=document.getElementById('pinM');
+  if(pinM) pinM.textContent=[s.brand, s.site, s.person, s.date].filter(Boolean).join(' · ');
+  return true;
+}
+function pushStory(title, text, views, src){
   const t=strip(title); if(!t) return;
   if(seen.has(t)) return;
-  if(liveStories.some(s=>s.title===t)) return;
+  if(liveStories.some(x=>x.title===t)) return;
   const tag=topicOf(t, text);
   const v=(views||0)*topicBoost(tag)+topicBoost(tag)*100;
-  liveStories.push({title:t, text:strip(text).slice(0,420), views:v, tag, year:2026});
+  liveStories.push({title:t, text:strip(text).slice(0,420), views:v, tag, year:2026, source:src||{brand:'Public feed', site:'wikipedia.org', date:todayISO()}});
 }
 
 async function ingestFeatured(d){
@@ -1091,16 +1126,26 @@ async function ingestFeatured(d){
       (feat.news||[]).forEach(story=>{
         const link=(story.links&&story.links[0])||{};
         const title=(link.titles&&(link.titles.normalized||link.titles.display))||link.title||'Story';
-        pushStory(title, story.story||link.extract||'');
+        const slug=(link.titles&&link.titles.normalized)||title;
+        pushStory(title, story.story||link.extract||'', 0, {
+          brand:'Wikipedia', site:'wikipedia.org', person:'', date:todayISO(),
+          url:'https://en.wikipedia.org/wiki/'+encodeURIComponent(String(slug).replace(/ /g,'_'))
+        });
       });
       ((feat.mostread&&feat.mostread.articles)||[]).slice(0,10).forEach(a=>{
         const name=(a.article||(a.titles&&a.titles.normalized)||'').replace(/_/g,' ');
         if(/^(Main Page|Special:|Wikipedia:|Portal:|File:)/i.test(name)) return;
-        pushStory(name, a.extract||a.description||'', a.views||0);
+        pushStory(name, a.extract||a.description||'', a.views||0, {
+          brand:'Wikipedia', site:'wikipedia.org', person:'', date:todayISO(),
+          url:'https://en.wikipedia.org/wiki/'+encodeURIComponent(name.replace(/ /g,'_'))
+        });
       });
       if(feat.tfa){
         const tt=(feat.tfa.titles&&feat.tfa.titles.normalized)||feat.tfa.title;
-        pushStory(tt, feat.tfa.extract||'Featured today');
+        pushStory(tt, feat.tfa.extract||'Featured today', 0, {
+          brand:'Wikipedia', site:'wikipedia.org', person:'', date:todayISO(),
+          url:'https://en.wikipedia.org/wiki/'+encodeURIComponent(String(tt).replace(/ /g,'_'))
+        });
       }
       if(liveStories.length) return;
     }catch(e){}
@@ -1111,7 +1156,18 @@ async function ingestHN(){
   try{
     const ids=(await fetch('https://hacker-news.firebaseio.com/v0/topstories.json').then(r=>r.json())).slice(0,25);
     const items=await Promise.all(ids.map(id=>fetch('https://hacker-news.firebaseio.com/v0/item/'+id+'.json').then(r=>r.json())));
-    items.forEach(it=>{ if(it&&it.title) pushStory(it.title, it.title+'. Ranked live discussion.', it.score||0); });
+    items.forEach(it=>{
+      if(!it||!it.title) return;
+      const url=it.url||('https://news.ycombinator.com/item?id='+it.id);
+      const host=hostOf(it.url)||'news.ycombinator.com';
+      pushStory(it.title, it.title+'. Ranked live discussion.', it.score||0, {
+        brand: host==='news.ycombinator.com'?'Hacker News':host,
+        site: host,
+        person: it.by||'',
+        date: it.time?new Date(it.time*1000).toISOString().slice(0,10):todayISO(),
+        url
+      });
+    });
   }catch(e){}
 }
 
@@ -1470,8 +1526,10 @@ if(bLong) bLong.onclick=()=>playFormat('long');
 async function openStory(st){
   if(!st){ say('Caught up. New headlines arrive every minute.'); return; }
   seen.add(st.title); seenSave();
+  lastSource=st.source||{brand:'Public feed', site:'wikipedia.org', date:todayISO()};
   say('CURRENT NEWS · '+st.title);
   showVideo(st.title);
+  paintSource(lastSource);
   let body=st.text;
   if(!body || body.length<70 || /^trending today/i.test(body)){
     const ex=await wikiExtract(st.title);
@@ -1480,6 +1538,7 @@ async function openStory(st){
   if(!body) body=st.title;
   const place=await locate(st.title+' '+body);
   flyTo(place, st.title, body);
+  paintSource(lastSource);
 }
 const bPop=document.getElementById('bPop');
 if(bPop) bPop.onclick=()=>say('World population (modeled UN-range clock): '+popStr(worldPop())+'. Not a census office.');
