@@ -1,0 +1,9 @@
+{
+  "status": "not_connected",
+  "currency": "USD",
+  "cents_lifetime": 0,
+  "queue": [
+    {"kind": "pod_draft", "title": "World Ring gold-on-black tee", "note": "Needs Printify shop"},
+    {"kind": "itch_draft", "title": "White Wings desk (free+tip)", "note": "Needs itch account"}
+  ]
+}
