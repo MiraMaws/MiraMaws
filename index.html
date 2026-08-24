@@ -154,7 +154,11 @@
     box-shadow:0 0 8px #2dff7a;
   }
   #locTab b { display:block; color:#2dff7a; font-size:12px; letter-spacing:.12em; }
-  #census { max-height:18vh; overflow:auto; font-size:10px; }
+  #mkBar { position:fixed; left:10px; bottom: 122px; z-index:6; width:min(230px,32vw); padding:6px 8px; }
+  #mkBar .mktitle { font-size:8px; letter-spacing:.18em; color:#ff9adf; margin-bottom:4px; }
+  #mkStrip { font-size:10px; max-height:22vh; overflow:hidden; }
+  @media (max-width:820px){ #mkBar { display:none; } }
+  #bMeme { flex:1.1; }
   #census .mk { cursor:pointer; }
   #mira .tag {
     position:absolute; left:0; right:0; bottom:0; z-index:2; margin:0; padding:4px 0 5px;
@@ -354,6 +358,10 @@
   <p class="sub">Earlier years · quieter ink</p>
   <div class="arch" id="arch"></div>
 </aside>
+<div id="mkBar" class="hud" aria-label="markets">
+  <div class="mktitle">ASSETS</div>
+  <div id="mkStrip"></div>
+</div>
 <div id="locTab" aria-live="polite"></div>
 <div id="bar" class="hud">
   <div id="mira" title="Mira — desk anchor">
@@ -373,8 +381,8 @@
   <p id="say">CURRENT NEWS is the main desk. Advisors speak when asked.</p>
   <div class="buys">
     <button class="buy" id="bNow" type="button"><b>CURRENT NEWS</b><small>main desk</small></button>
+    <button class="buy" id="bMeme" type="button"><b>TOP MEMES</b><small>tied to the story</small></button>
     <button class="buy" id="bNext" type="button"><b>Upcoming</b><small>next headline</small></button>
-    <button class="buy" id="bPop" type="button"><b>World pop</b><small>UN-range</small></button>
   </div>
   </div>
 </div>
@@ -829,22 +837,34 @@ function mountYt(id){
     }
   });
 }
+function showPinShell(title){
+  const pin=document.getElementById('pin');
+  if(!pin) return;
+  document.getElementById('pinT').textContent=title||'CURRENT NEWS';
+  const wrap=document.getElementById('ytwrap');
+  if(wrap) wrap.style.display='block';
+  pin.style.display='block';
+  requestAnimationFrame(()=>pin.classList.add('on'));
+}
 let ytSeq=0;
 async function showVideo(title){
   const seq=++ytSeq;
   videoOn=true;
   hushDesk();
+  showPinShell(title);
   const wrap=document.getElementById('ytwrap');
   const box=document.getElementById('ytframe');
   wrap.style.display='block';
   if(!ytPlayer) box.textContent='Finding the video…';
-  await waitYt();
-  const ids=await findYtIds(title);
+  let ids=await findYtIds(title);
+  if(seq!==ytSeq) return;
+  if(!ids.length) ids=await findYtIds('world news today breaking');
   if(seq!==ytSeq) return;
   const id=ids[0];
   const search='https://www.youtube.com/results?search_query='+encodeURIComponent((title||'world news')+' news');
-  document.getElementById('ytlink').href=id?('https://www.youtube.com/watch?v='+id):search;
-  if(id && window.YT && YT.Player){
+  const link=document.getElementById('ytlink');
+  if(link) link.href=id?('https://www.youtube.com/watch?v='+id):search;
+  if(id){
     ytIds=ids; ytI=0;
     mountYt(id);
     clearTimeout(window.__briefT);
@@ -852,7 +872,7 @@ async function showVideo(title){
     return;
   }
   if(ytPlayer) return;
-  box.innerHTML='<p style="padding:12px;color:#d8c0f0">Still hunting a watch link. Try Upcoming, or YouTube ↗</p>';
+  box.innerHTML='<p style="padding:12px;color:#d8c0f0">No embed yet. <a href="'+search+'" target="_blank" rel="noopener">Open YouTube ↗</a></p>';
 }
 function boardBrief(title, body){
   const t=(title+' '+body).toLowerCase();
@@ -928,11 +948,26 @@ function featPath(d){
   const day=String(d.getUTCDate()).padStart(2,'0');
   return y+'/'+m+'/'+day;
 }
+function topicOf(title, text){
+  const b=(title+' '+text).toLowerCase();
+  if(/white house|president|congress|washington|pentagon/.test(b)) return 'White House';
+  if(/elon|musk|tesla|spacex|x\.com/.test(b)) return 'Musk';
+  if(/china|beijing|xi jinping|taiwan|ccp/.test(b)) return 'China';
+  if(/nasa|spacex|rocket|mars|lunar|orbit|satellite/.test(b)) return 'Space';
+  if(/\bai\b|openai|chatgpt|anthropic|gemini|llm/.test(b)) return 'AI';
+  if(/united states|\bu\.s\.|america|trump|biden/.test(b)) return 'America';
+  return 'World';
+}
+function topicBoost(tag){
+  return ({'White House':8,'America':6,'China':6,'Musk':7,'Space':6,'AI':7,'World':1})[tag]||1;
+}
 function pushStory(title, text, views){
   const t=strip(title); if(!t) return;
   if(seen.has(t)) return;
   if(liveStories.some(s=>s.title===t)) return;
-  liveStories.push({title:t, text:strip(text).slice(0,420), views:views||0, year:2026});
+  const tag=topicOf(t, text);
+  const v=(views||0)*topicBoost(tag)+topicBoost(tag)*100;
+  liveStories.push({title:t, text:strip(text).slice(0,420), views:v, tag, year:2026});
 }
 
 async function ingestFeatured(d){
@@ -1229,11 +1264,21 @@ async function playStory(step){
   if(!liveStories.length){ say('No headline yet.'); return; }
   if(step) playI=(playI+1)%liveStories.length;
   else if(playI>=liveStories.length) playI=0;
-  await openStory(liveStories[playI]);
+  const st=liveStories[playI];
+  showPinShell(st.title);
+  await openStory(st);
 }
-document.getElementById('bPop').onclick=()=>say('World population (modeled UN-range clock): '+popStr(worldPop())+'. Not a census office.');
 document.getElementById('bNow').onclick=()=>playStory(false);
 document.getElementById('bNext').onclick=()=>playStory(true);
+const bMeme=document.getElementById('bMeme');
+if(bMeme) bMeme.onclick=async()=>{
+  const hook=lastEvent.title||'world news';
+  say('TOP MEMES · tied to '+hook);
+  showPinShell('MEME · '+hook);
+  await showVideo(hook+' meme compilation');
+};
+const bPop=document.getElementById('bPop');
+if(bPop) bPop.onclick=()=>say('World population (modeled UN-range clock): '+popStr(worldPop())+'. Not a census office.');
 setInterval(()=>{
   document.getElementById('popN').textContent=popStr(worldPop());
   document.getElementById('timeN').textContent=utcStr();
@@ -1253,7 +1298,8 @@ setInterval(()=>{ loadToday().then(()=>{ paintNews(); return syncEarth(); }); },
 const TICKS=['AAPL','MSFT','NVDA','GOOGL','AMZN','META','TSLA','BRK-B','JPM','V','UNH','XOM','JNJ','WMT','BTC-USD','ETH-USD','GC=F','SI=F','^GSPC','EURUSD=X'];
 let mkOff=0;
 async function pullMarkets(){
-  const host=document.getElementById('mkts'); if(!host) return;
+  const host=document.getElementById('mkts');
+  const strip=document.getElementById('mkStrip');
   const slice=TICKS.slice(mkOff, mkOff+6);
   mkOff=(mkOff+6)%TICKS.length;
   const rows=[];
@@ -1269,14 +1315,18 @@ async function pullMarkets(){
       rows.push({t, px, ch});
     }catch(e){}
   }
-  host.innerHTML='';
-  rows.forEach(x=>{
-    const d=document.createElement('div'); d.className='mk';
-    const up=x.ch>=0;
-    d.innerHTML='<b>'+x.t+'</b><span class="px '+(up?'up':'dn')+'">'+(up?'▲':'▼')+' '+x.px.toFixed(x.px>50?1:3)+' ('+(up?'+':'')+x.ch.toFixed(2)+'%)</span>';
-    host.appendChild(d);
-  });
-  if(!rows.length) host.textContent='Markets feed blocked in this browser.';
+  function paint(el){
+    if(!el) return;
+    el.innerHTML='';
+    rows.forEach(x=>{
+      const d=document.createElement('div'); d.className='mk';
+      const up=x.ch>=0;
+      d.innerHTML='<b>'+x.t+'</b><span class="px '+(up?'up':'dn')+'">'+(up?'▲':'▼')+' '+x.px.toFixed(x.px>50?1:3)+' ('+(up?'+':'')+x.ch.toFixed(2)+'%)</span>';
+      el.appendChild(d);
+    });
+    if(!rows.length) el.textContent='Markets feed blocked in this browser.';
+  }
+  paint(host); paint(strip);
 }
 pullMarkets();
 setInterval(pullMarkets, 45000);
