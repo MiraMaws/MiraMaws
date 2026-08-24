@@ -85,13 +85,24 @@
   .ev:hover { border-color:var(--m); box-shadow:0 0 10px #ff2ea633; }
   .ev b { display:block; font-size:11px; color:#ff9adf; }
   .ev span { font-size:10px; color:var(--d); }
-  #pin { position:fixed; top:12px; right: max(12px, calc(50% - 380px + 400px)); left:auto; bottom:auto; z-index:9;
-    width:min(480px,46vw); min-width:320px; min-height:220px; max-width:70vw; max-height:72vh;
-    display:none; padding:10px 12px 12px; resize:both; overflow:auto;
-    transform:scale(.92); opacity:0; transform-origin:top right;
-    transition:transform .35s ease, opacity .25s; }
-  #pin.on { display:block; transform:scale(1); opacity:1; }
-  #pin.big { width:min(860px,72vw); }
+  #pin { position:fixed; top:12px; right:12px; left:auto; bottom:auto; z-index:9;
+    width:min(480px,46vw); height:auto; min-width:280px; min-height:180px;
+    display:none; padding:10px 12px 14px; overflow:hidden;
+    display:none; flex-direction:column;
+    transform:none; opacity:0; }
+  #pin.on { display:flex; opacity:1; }
+  #pin.theatre { max-width:none; max-height:none; }
+  #ytwrap { flex:1; min-height:160px; display:flex; flex-direction:column; }
+  #ytframe { flex:1; min-height:160px; }
+  .rz { position:absolute; z-index:12; }
+  .rz.n { top:0; left:12px; right:12px; height:8px; cursor:ns-resize; }
+  .rz.s { bottom:0; left:12px; right:12px; height:8px; cursor:ns-resize; }
+  .rz.e { right:0; top:12px; bottom:12px; width:8px; cursor:ew-resize; }
+  .rz.w { left:0; top:12px; bottom:12px; width:8px; cursor:ew-resize; }
+  .rz.ne { top:0; right:0; width:14px; height:14px; cursor:nesw-resize; }
+  .rz.nw { top:0; left:0; width:14px; height:14px; cursor:nwse-resize; }
+  .rz.se { bottom:0; right:0; width:14px; height:14px; cursor:nwse-resize; }
+  .rz.sw { bottom:0; left:0; width:14px; height:14px; cursor:nesw-resize; }
   .liveban { display:inline-flex; align-items:center; gap:6px; color:#ff4d6d; font-size:10px;
     letter-spacing:.2em; font-weight:800; margin:2px 0 6px; }
   .liveban i { width:8px; height:8px; border-radius:50%; background:#ff2a2a; box-shadow:0 0 8px #ff2a2a;
@@ -267,6 +278,14 @@
   <i class="pl sa" style="--r:48vmin"></i>
 </div>
 <div id="pin" class="hud">
+  <span class="rz n" data-dir="n"></span>
+  <span class="rz s" data-dir="s"></span>
+  <span class="rz e" data-dir="e"></span>
+  <span class="rz w" data-dir="w"></span>
+  <span class="rz ne" data-dir="ne"></span>
+  <span class="rz nw" data-dir="nw"></span>
+  <span class="rz se" data-dir="se"></span>
+  <span class="rz sw" data-dir="sw"></span>
   <button id="pinX" type="button">✕</button>
   <h3 id="pinT"></h3>
   <div class="liveban"><i></i> LIVE NEWS</div>
@@ -277,6 +296,7 @@
     <div class="ytctl">
       <button type="button" id="ytPause">Pause</button>
       <button type="button" id="ytPlay">Play</button>
+      <button type="button" id="ytTheatre">Theatre</button>
       <label>Vol <input id="ytVol" type="range" min="0" max="100" value="80"/></label>
       <select id="ytSpd" title="Speed">
         <option value="0.5">0.5x</option>
@@ -1159,6 +1179,63 @@ const ytp=document.getElementById('ytPause');
 const yto=document.getElementById('ytPlay');
 if(ytp) ytp.onclick=()=>ytCmd('pauseVideo');
 if(yto) yto.onclick=()=>ytCmd('playVideo');
+(function bindPinResize(){
+  const pin=document.getElementById('pin'); if(!pin) return;
+  pin.querySelectorAll('.rz').forEach(h=>{
+    h.onpointerdown=e=>{
+      e.preventDefault(); e.stopPropagation();
+      pin.classList.remove('theatre');
+      const dir=h.dataset.dir||'';
+      const r=pin.getBoundingClientRect();
+      const sx=e.clientX, sy=e.clientY;
+      const sl=r.left, st=r.top, sw=r.width, sh=r.height;
+      function move(ev){
+        let L=sl, T=st, W=sw, H=sh;
+        const dx=ev.clientX-sx, dy=ev.clientY-sy;
+        if(dir.indexOf('e')>=0) W=sw+dx;
+        if(dir.indexOf('s')>=0) H=sh+dy;
+        if(dir.indexOf('w')>=0){ L=sl+dx; W=sw-dx; }
+        if(dir.indexOf('n')>=0){ T=st+dy; H=sh-dy; }
+        W=Math.max(280, Math.min(W, window.innerWidth-20));
+        H=Math.max(180, Math.min(H, window.innerHeight-20));
+        pin.style.left=L+'px'; pin.style.top=T+'px';
+        pin.style.width=W+'px'; pin.style.height=H+'px';
+        pin.style.right='auto'; pin.style.bottom='auto';
+      }
+      function up(){
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      }
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    };
+  });
+})();
+function theatreMode(){
+  const pin=document.getElementById('pin'); if(!pin) return;
+  if(pin.classList.contains('theatre')){
+    pin.classList.remove('theatre');
+    pin.style.left='auto'; pin.style.right='12px'; pin.style.top='12px';
+    pin.style.width='min(480px,46vw)'; pin.style.height='auto';
+    return;
+  }
+  const L=document.body.classList.contains('lOff')?12:268;
+  const R=document.body.classList.contains('rOff')?12:268;
+  const T=10, B=136;
+  const roomW=window.innerWidth-L-R;
+  const roomH=window.innerHeight-T-B;
+  let w=Math.min(1920, roomW), h=Math.min(1080, roomH);
+  if(w/h>16/9) w=Math.round(h*16/9); else h=Math.round(w*9/16);
+  w=Math.max(320,w); h=Math.max(200,h);
+  pin.classList.add('theatre','on');
+  pin.style.display='flex';
+  pin.style.left=(L+Math.max(0,(roomW-w)/2))+'px';
+  pin.style.top=T+'px';
+  pin.style.right='auto'; pin.style.bottom='auto';
+  pin.style.width=w+'px'; pin.style.height=h+'px';
+}
+const ytTh=document.getElementById('ytTheatre');
+if(ytTh) ytTh.onclick=theatreMode;
 const ytVol=document.getElementById('ytVol');
 if(ytVol) ytVol.oninput=()=>{ try{ if(ytPlayer&&ytPlayer.setVolume) ytPlayer.setVolume(+ytVol.value); }catch(e){} };
 const ytSpd=document.getElementById('ytSpd');
