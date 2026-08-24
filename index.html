@@ -111,7 +111,30 @@
     background:repeating-linear-gradient(180deg, transparent 0 3px, #30104a14 4px);
   }
   #mira img { width:100%; height:100%; object-fit:cover; object-position:center 14%; display:block; }
-  #mira.talk .frame { box-shadow:inset 0 0 18px #000a, 0 0 16px #c44dff88; }
+  #mira.talk .frame, #mira .frame { animation:miraGlitch 1.15s steps(2,end) infinite; }
+  @keyframes miraGlitch {
+    0% { filter:none; box-shadow:inset 0 0 18px #000a, 0 0 0 2px #c44dff, -2px 0 #ff2ea6, 2px 0 #39f6ff; }
+    20% { filter:hue-rotate(20deg) contrast(1.15); box-shadow:inset 0 0 18px #000a, 0 0 0 2px #ff2ea6, 3px 0 #39f6c0, -3px 0 #c44dff; }
+    40% { filter:none; box-shadow:inset 0 0 18px #000a, 0 0 0 2px #c44dff; }
+    55% { filter:saturate(1.4); box-shadow:inset 0 0 18px #000a, 0 0 12px #c44dff, -4px 1px #ff2ea6; }
+    70% { filter:none; box-shadow:inset 0 0 18px #000a, 0 0 0 2px #a855f7; }
+    85% { filter:contrast(1.2); box-shadow:inset 0 0 18px #000a, 0 0 0 3px #39f6c0, 2px -2px #ff2ea6; }
+    100% { filter:none; box-shadow:inset 0 0 18px #000a, 0 0 0 2px #c44dff; }
+  }
+  #locTab {
+    position:fixed; left:50%; top:38%; z-index:8; display:none; pointer-events:none;
+    transform:translate(80px,-20px); min-width:160px; max-width:240px;
+    padding:8px 10px; background:#06140ee8; border:1px solid #2dff7a;
+    box-shadow:0 0 16px #2dff7a44, inset 0 0 12px #0008; color:#b8ffd4;
+    font-size:11px; letter-spacing:.06em;
+  }
+  #locTab:before {
+    content:""; position:absolute; left:-48px; top:50%; width:48px; height:1px; background:#2dff7a;
+    box-shadow:0 0 8px #2dff7a;
+  }
+  #locTab b { display:block; color:#2dff7a; font-size:12px; letter-spacing:.12em; }
+  #census { max-height:18vh; overflow:auto; font-size:10px; }
+  #census .mk { cursor:pointer; }
   #mira .tag {
     position:absolute; left:0; right:0; bottom:0; z-index:2; margin:0; padding:4px 0 5px;
     font-size:8px; letter-spacing:.18em; color:#e8d0ff; background:#12061cee;
@@ -272,6 +295,8 @@
   <p id="sync">sync —</p>
   <button class="item" id="bDay" type="button">TODAY</button>
   <button class="item" id="bRadio" type="button">RADIO · ON</button>
+  <h2>CENSUS</h2>
+  <div id="census"></div>
   <h2>MARKETS</h2>
   <div id="mkts"></div>
   <div class="srcs">
@@ -291,6 +316,7 @@
   <p class="sub">Earlier years · quieter ink</p>
   <div class="arch" id="arch"></div>
 </aside>
+<div id="locTab" aria-live="polite"></div>
 <div id="bar" class="hud">
   <div id="mira" title="Mira — desk anchor">
     <div class="frame">
@@ -497,12 +523,111 @@ function miraSpeak(title, body){
 }
 if(window.speechSynthesis) speechSynthesis.addEventListener('voiceschanged', ()=>{});
 let lastEvent={title:'the quiet spinning of 2026', extra:'No pin yet. The planet is still the room.', place:null};
+let sfxCtx=null;
+function sfx(kind){
+  if(videoOn) return;
+  try{
+    sfxCtx=sfxCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(sfxCtx.state==='suspended') sfxCtx.resume();
+    const o=sfxCtx.createOscillator(), g=sfxCtx.createGain();
+    o.connect(g); g.connect(sfxCtx.destination);
+    const now=sfxCtx.currentTime;
+    if(kind==='zoom'){
+      o.type='sawtooth'; o.frequency.setValueAtTime(180,now); o.frequency.exponentialRampToValueAtTime(520,now+0.18);
+      g.gain.setValueAtTime(0.0001,now); g.gain.exponentialRampToValueAtTime(0.08,now+0.03); g.gain.exponentialRampToValueAtTime(0.0001,now+0.28);
+    } else if(kind==='pop'){
+      o.type='square'; o.frequency.setValueAtTime(880,now); o.frequency.exponentialRampToValueAtTime(220,now+0.12);
+      g.gain.setValueAtTime(0.0001,now); g.gain.exponentialRampToValueAtTime(0.06,now+0.01); g.gain.exponentialRampToValueAtTime(0.0001,now+0.16);
+    } else {
+      o.type='square'; o.frequency.setValueAtTime(1400,now); o.frequency.setValueAtTime(200,now+0.04); o.frequency.setValueAtTime(1100,now+0.08);
+      g.gain.setValueAtTime(0.05,now); g.gain.exponentialRampToValueAtTime(0.0001,now+0.14);
+    }
+    o.start(now); o.stop(now+0.3);
+  }catch(e){}
+}
+function popNum(p){
+  const s=String((p&&p.pop)||'');
+  const n=parseFloat(s);
+  if(!n) return 0;
+  if(/b/i.test(s)) return n*1e9;
+  if(/m/i.test(s)) return n*1e6;
+  if(/k/i.test(s)) return n*1e3;
+  return n;
+}
+function popPretty(p){
+  const n=popNum(p);
+  if(n>=1e9) return (n/1e9).toFixed(2)+' billion';
+  if(n>=1e6) return (n/1e6).toFixed(1)+' million';
+  if(n>=1e3) return Math.round(n).toLocaleString('en-US');
+  return p&&p.pop?String(p.pop):'unknown';
+}
+let countryPolys=[];
+function normName(s){ return String(s||'').toLowerCase().replace(/[^a-z]/g,''); }
+function findCountryPoly(place){
+  const keys=[place&&place.c, place&&place.name].map(normName).filter(Boolean);
+  return countryPolys.find(f=>{
+    const n=normName((f.properties&& (f.properties.name||f.properties.NAME||f.properties.ADMIN))||'');
+    return keys.some(k=>n===k || n.includes(k) || k.includes(n));
+  })||null;
+}
+function markPlace(p){
+  if(!world || !p) return;
+  try{
+    world.ringsData([{lat:+p.lat,lng:+p.lng}])
+      .ringColor(()=>'#2dff7a')
+      .ringMaxRadius(2.8)
+      .ringPropagationSpeed(2.4)
+      .ringRepeatPeriod(700);
+  }catch(e){}
+  const poly=findCountryPoly(p);
+  try{
+    if(typeof world.polygonsData==='function'){
+      world.polygonsData(poly?[poly]:[])
+        .polygonGeoJsonGeometry(d=>d.geometry)
+        .polygonCapColor(()=> 'rgba(45,255,122,0.18)')
+        .polygonSideColor(()=> 'rgba(45,255,122,0.45)')
+        .polygonStrokeColor(()=> '#2dff7a')
+        .polygonAltitude(0.008);
+    }
+  }catch(e){}
+  const tab=document.getElementById('locTab');
+  if(tab){
+    tab.innerHTML='<b>'+(p.c||p.name||'SITE').toUpperCase()+'</b>'+(p.name||'')+' · '+popPretty(p)+' population';
+    tab.style.display='block';
+  }
+  sfx('zoom');
+  setTimeout(()=>sfx('pop'), 280);
+}
+function fillCensus(){
+  const host=document.getElementById('census'); if(!host) return;
+  host.innerHTML='';
+  PLACES.slice().sort((a,b)=>popNum(b)-popNum(a)).forEach(p=>{
+    const d=document.createElement('div'); d.className='mk';
+    d.innerHTML='<b>'+p.name+'</b><span class="px">'+p.c+' · '+(p.pop||'?')+'</span>';
+    d.onclick=()=>flyTo(p, p.name+' · '+p.c, p.name+', '+p.c+' — '+popPretty(p)+' population.');
+    host.appendChild(d);
+  });
+}
+function loadBorders(){
+  if(!world || typeof world.polygonsData!=='function') return;
+  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r=>r.json()).then(topo=>{
+    if(!window.topojson){
+      return fetch('https://cdn.jsdelivr.net/npm/world.geo.json@1.0.0/countries.geo.json').then(r=>r.json());
+    }
+    return null;
+  }).catch(()=>fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json').then(r=>r.json()))
+  .then(gj=>{
+    if(!gj) return;
+    countryPolys = gj.features||gj;
+  }).catch(()=>{});
+}
 function flyTo(p, title, extra){
   if(!p || p.lat==null || p.lng==null || isNaN(+p.lat) || isNaN(+p.lng)) return;
   if(world) world.pointOfView({lat:+p.lat,lng:+p.lng,altitude:0.85}, 1600);
   document.getElementById('alt').value=0.85;
   document.getElementById('altN').textContent='0.85';
   lastEvent={title:title||p.name, extra:extra||'', place:p};
+  markPlace(p);
   const pin=document.getElementById('pin');
   document.getElementById('pinT').textContent=title||p.name||'Pin';
   document.getElementById('pinM').textContent=((p.name||'')+(p.c?(' · '+p.c):''))+(p.pop?(' · '+p.pop):'');
@@ -1046,6 +1171,8 @@ setInterval(()=>{
 },1000);
 paintNews();
 pullHeat(null);
+fillCensus();
+loadBorders();
 if(window.matchMedia && matchMedia('(max-width:820px)').matches){
   document.body.classList.add('lOff','rOff');
   document.getElementById('left').classList.add('hideL');
