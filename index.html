@@ -3,63 +3,91 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>White Wings — Earth View</title>
+<title>White Wings</title>
 <style>
-  :root { --g:#c9a227; --p:#7c4dff; --ink:#ece8f4; --d:#9a90a8; --panel:#121018f2; }
+  :root { --g:#c9a227; --p:#7c5cff; --ink:#e8e4f0; --d:#8b8498; --bg:#07070e; --pan:#101018f5; --line:#232333; }
   * { box-sizing:border-box; margin:0; }
-  html,body,#globe { height:100%; background:#05040a; color:var(--ink); font-family:ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
+  html,body,#globe { height:100%; background:var(--bg); color:var(--ink); font-family:ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
   #globe { position:fixed; inset:0; }
-  #chip { position:fixed; top:14px; left:14px; z-index:5; background:var(--panel); border:1px solid #2a2438;
-    border-radius:10px; padding:8px 12px; font-size:12px; }
-  #chip b { color:var(--g); letter-spacing:.14em; font-weight:600; }
-  #chip span { display:block; color:var(--d); font-size:11px; margin-top:2px; }
-  #dock { position:fixed; top:14px; right:14px; z-index:5; width:240px; background:var(--panel);
-    border:1px solid #2a2438; border-radius:12px; padding:10px; font-size:12px; max-height:calc(100vh - 200px); overflow:auto; }
-  #dock h2 { font-size:10px; letter-spacing:.16em; color:var(--d); margin:8px 0 6px; }
-  #dock button { display:block; width:100%; text-align:left; margin:3px 0; padding:7px 8px; border-radius:8px;
-    border:1px solid #2a2430; background:#0c0c12; color:var(--ink); font:inherit; cursor:pointer; }
-  #dock button.on { border-color:var(--p); background:#1a1230; }
-  #card { position:fixed; left:14px; bottom:118px; z-index:5; width:min(320px,70vw); display:none;
-    background:var(--panel); border:1px solid #2a2438; border-radius:12px; padding:12px; font-size:13px; line-height:1.45; }
-  #card h3 { color:var(--g); font-size:15px; margin-bottom:4px; }
-  #card .meta { color:var(--d); font-size:11px; margin-bottom:8px; }
-  #stats { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px; }
-  #stats i { display:block; background:#0c0c12; border-radius:8px; padding:6px; font-style:normal; }
-  #stats b { display:block; color:var(--g); }
-  #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:5; width:min(540px,96vw);
-    padding:8px 10px 12px; background:linear-gradient(transparent, #05040acc 28%); }
+  .side { position:fixed; top:12px; bottom:92px; z-index:6; width:268px; background:var(--pan);
+    border:1px solid var(--line); border-radius:12px; padding:10px; overflow:auto;
+    transition:transform .25s ease; }
+  #left { left:12px; }
+  #right { right:12px; }
+  .side.hideL { transform:translateX(calc(-100% - 20px)); }
+  .side.hideR { transform:translateX(calc(100% + 20px)); }
+  .tog { position:fixed; top:14px; z-index:7; width:28px; height:28px; border-radius:8px;
+    border:1px solid var(--line); background:var(--pan); color:var(--g); cursor:pointer; }
+  #tL { left:286px; }
+  #tR { right:286px; }
+  .side.hideL + * { }
+  body.lOff #tL { left:12px; }
+  body.rOff #tR { right:12px; }
+  h1 { font-size:13px; letter-spacing:.12em; color:var(--g); font-weight:600; }
+  .sub { color:var(--d); font-size:11px; margin:2px 0 10px; }
+  h2 { font-size:10px; letter-spacing:.14em; color:var(--d); margin:12px 0 6px; }
+  button.item, .mode { display:block; width:100%; text-align:left; margin:3px 0; padding:7px 8px;
+    border-radius:8px; border:1px solid var(--line); background:#0c0c14; color:var(--ink);
+    font:inherit; cursor:pointer; font-size:12px; }
+  button.item.on, .mode.on { border-color:var(--p); background:#16122a; }
+  label.sl { display:flex; justify-content:space-between; font-size:11px; color:var(--d); margin:8px 0 2px; }
+  input[type=range] { width:100%; accent-color:var(--p); }
+  .ev { border:1px solid var(--line); border-radius:8px; padding:8px; margin:6px 0; cursor:pointer; background:#0c0c14; }
+  .ev:hover { border-color:var(--p); }
+  .ev b { display:block; font-size:12px; color:var(--g); }
+  .ev span { font-size:11px; color:var(--d); }
+  #card { position:fixed; z-index:8; min-width:180px; max-width:240px; background:#101018ee;
+    border:1px solid var(--p); border-radius:10px; padding:8px 10px; font-size:12px; pointer-events:none;
+    box-shadow:0 8px 24px #0008; }
+  #card h3 { color:var(--g); font-size:13px; }
+  #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:6; width:min(520px,70vw);
+    padding:8px 10px 10px; }
   .row { display:flex; gap:6px; }
-  .stat { flex:1; background:#121018cc; border:1px solid #2a2438; border-radius:8px; padding:6px; text-align:center; }
+  .stat { flex:1; background:var(--pan); border:1px solid var(--line); border-radius:8px; text-align:center; padding:5px; }
   .stat span { display:block; font-size:9px; letter-spacing:.1em; color:var(--d); }
-  .buys,.adv { display:flex; gap:6px; margin-top:6px; }
-  button.buy { flex:1; text-align:left; padding:6px 8px; border-radius:8px; border:1px solid #2a2430;
-    background:#121018; color:var(--ink); font:inherit; cursor:pointer; }
-  button.buy.go { border-color:var(--g); }
-  button.buy:disabled { opacity:.35; }
-  button.buy small { display:block; color:var(--d); }
-  .adv button { flex:1; border:1px solid #2a2430; background:#121018; color:var(--g); border-radius:999px; padding:5px; cursor:pointer; font-size:12px; }
-  #say { min-height:2.2em; text-align:center; font-size:12px; color:#c8bdd4; margin:6px 0; }
+  .buys { display:flex; gap:6px; margin-top:6px; }
+  .buy { flex:1; text-align:left; padding:6px; border-radius:8px; border:1px solid var(--line);
+    background:var(--pan); color:var(--ink); font:inherit; cursor:pointer; }
+  .buy.go { border-color:var(--g); }
+  .buy:disabled { opacity:.35; }
+  .buy small { display:block; color:var(--d); }
+  #say { text-align:center; font-size:12px; color:#c8bdd4; min-height:1.6em; margin:5px 0; }
+  .dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; }
 </style>
 <script src="https://unpkg.com/globe.gl"></script>
 </head>
 <body>
 <div id="globe"></div>
-<div id="chip"><b>EARTH VIEW</b><span id="stamp">White Wings · 24 Aug 2026</span></div>
-<aside id="dock">
-  <h2>IMAGERY</h2>
-  <button class="on" data-tex="blue">Day marble</button>
-  <button data-tex="night">Night lights</button>
-  <button data-tex="dark">Dark terrain</button>
-  <h2>OVERLAYS</h2>
-  <button class="on" id="bPts">Cities</button>
-  <button class="on" id="bAtm">Atmosphere</button>
-  <h2>ACTIVITY</h2>
-  <button id="bSpin" class="on">Auto spin</button>
-  <button data-ask="hekate">Ask Hekate</button>
-  <button data-ask="board">Board</button>
-  <button data-ask="paimon">Paimon</button>
+<button class="tog" id="tL" type="button">‹</button>
+<button class="tog" id="tR" type="button">›</button>
+<aside class="side" id="left">
+  <h1>WHITE WINGS</h1>
+  <p class="sub">Earth desk · 2026 · public atlas</p>
+  <h2>MODE</h2>
+  <button class="mode on" data-m="natural">Natural Earth</button>
+  <button class="mode" data-m="night">Night lights</button>
+  <button class="mode" data-m="ir">Infrared</button>
+  <button class="mode" data-m="data">Information</button>
+  <h2>LAYERS</h2>
+  <button class="item on" id="bCity"><span class="dot" style="background:#c9a227"></span>Cities</button>
+  <button class="item on" id="bArc"><span class="dot" style="background:#7c5cff"></span>Paths</button>
+  <button class="item on" id="bHex"><span class="dot" style="background:#3dd6c6"></span>Field</button>
+  <h2>SCALE</h2>
+  <label class="sl">Altitude <b id="altN">2.4</b></label>
+  <input id="alt" type="range" min="0.5" max="6" step="0.05" value="2.4"/>
+  <label class="sl">Spin <b id="spN">0.4</b></label>
+  <input id="spin" type="range" min="0" max="2" step="0.05" value="0.4"/>
+  <h2>ADVISORY</h2>
+  <button class="item" data-ask="hekate">Ask Hekate</button>
+  <button class="item" data-ask="board">Board</button>
+  <button class="item" data-ask="paimon">Paimon</button>
+  <button class="item" id="bDay">Today — fly to the day</button>
 </aside>
-<div id="card"></div>
+<aside class="side" id="right">
+  <h1>EVENTS</h1>
+  <p class="sub" id="evSub">Public record · on this day</p>
+  <div id="feed"></div>
+</aside>
 <div id="bar">
   <div class="row">
     <div class="stat"><span>LIGHT</span><b id="lum">0</b></div>
@@ -67,7 +95,7 @@
     <div class="stat"><span>LEVEL</span><b id="lvl">1</b></div>
     <div class="stat"><span>VISITED</span><b id="vis">0</b></div>
   </div>
-  <p id="say">Drag the world. Scroll to zoom. Click a gold city. Space feeds the sun.</p>
+  <p id="say">Drag · scroll · sliders send the world to space or home.</p>
   <div class="buys">
     <button class="buy" id="bAuto"><b>Collect away</b><small>15</small></button>
     <button class="buy" id="bClick"><b>Stronger sun</b><small>20</small></button>
@@ -76,90 +104,154 @@
 </div>
 <script>
 const TEX={
-  blue:'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+  natural:'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
   night:'https://unpkg.com/three-globe/example/img/earth-night.jpg',
-  dark:'https://unpkg.com/three-globe/example/img/earth-dark.jpg'
+  ir:'https://unpkg.com/three-globe/example/img/earth-dark.jpg',
+  data:'https://unpkg.com/three-globe/example/img/earth-dark.jpg'
 };
-const CITIES=[
-  {name:'Cairo',lat:30.04,lng:31.24,pop:'22m',r:'Africa',note:'Nile megacity. Anubis would file the river first.'},
-  {name:'Lagos',lat:6.52,lng:3.38,pop:'21m',r:'Africa',note:'Atlantic port heat. Asmodeus hears the generators.'},
-  {name:'Nairobi',lat:-1.29,lng:36.82,pop:'5m',r:'Africa',note:'Highland hinge. Hekate likes the altitude.'},
-  {name:'Cape Town',lat:-33.92,lng:18.42,pop:'5m',r:'Africa',note:'Two oceans meet. Maat would weigh both.'},
-  {name:'Paris',lat:48.86,lng:2.35,pop:'11m',r:'Europe',note:'A vow of stone streets. Astarte nods.'},
-  {name:'Berlin',lat:52.52,lng:13.40,pop:'4m',r:'Europe',note:'Federal light. 2026 still turning.'},
-  {name:'Rome',lat:41.90,lng:12.50,pop:'4m',r:'Europe',note:'Tut would restore a name on every hill.'},
-  {name:'London',lat:51.51,lng:-0.13,pop:'9m',r:'Europe',note:'An announced city. Paimon already sold tickets.'},
-  {name:'Istanbul',lat:41.01,lng:28.98,pop:'16m',r:'Eurasia',note:'Two continents, one hinge.'},
-  {name:'Moscow',lat:55.76,lng:37.62,pop:'13m',r:'Eurasia',note:'Long night. Amun-Ra keeps the unpublished street.'},
-  {name:'Delhi',lat:28.61,lng:77.21,pop:'32m',r:'Asia',note:'A union of tongues. The Ledger would overflow.'},
-  {name:'Beijing',lat:39.90,lng:116.41,pop:'22m',r:'Asia',note:'Old names under new light.'},
-  {name:'Tokyo',lat:35.68,lng:139.69,pop:'37m',r:'Asia',note:'Archipelago density. Night layer loves this.'},
-  {name:'Jakarta',lat:-6.21,lng:106.85,pop:'11m',r:'Asia',note:'Islands stacked like layers of perception.'},
-  {name:'Tehran',lat:35.69,lng:51.39,pop:'9m',r:'Asia',note:'Plateau. Heat you can weigh.'},
-  {name:'Sydney',lat:-33.87,lng:151.21,pop:'5m',r:'Oceania',note:'Harbor of leftover Heat.'},
-  {name:'New York',lat:40.71,lng:-74.01,pop:'19m',r:'Americas',note:'The loudest announcement on the Atlantic.'},
-  {name:'Mexico City',lat:19.43,lng:-99.13,pop:'22m',r:'Americas',note:'High valley. A city as a vow.'},
-  {name:'São Paulo',lat:-23.55,lng:-46.63,pop:'22m',r:'Americas',note:'Atlantic industry. The sun works overtime.'},
-  {name:'Lima',lat:-12.05,lng:-77.04,pop:'11m',r:'Americas',note:'Coast under a quiet fog. Amun would hide here.'}
+const PLACES=[
+  {name:'Cairo',c:'Egypt',lat:30.04,lng:31.24,pop:'22m'},
+  {name:'Lagos',c:'Nigeria',lat:6.52,lng:3.38,pop:'21m'},
+  {name:'Nairobi',c:'Kenya',lat:-1.29,lng:36.82,pop:'5m'},
+  {name:'Cape Town',c:'South Africa',lat:-33.92,lng:18.42,pop:'5m'},
+  {name:'Paris',c:'France',lat:48.86,lng:2.35,pop:'11m'},
+  {name:'Berlin',c:'Germany',lat:52.52,lng:13.40,pop:'4m'},
+  {name:'Rome',c:'Italy',lat:41.90,lng:12.50,pop:'4m'},
+  {name:'London',c:'United Kingdom',lat:51.51,lng:-0.13,pop:'9m'},
+  {name:'Madrid',c:'Spain',lat:40.42,lng:-3.70,pop:'7m'},
+  {name:'Kyiv',c:'Ukraine',lat:50.45,lng:30.52,pop:'3m'},
+  {name:'Istanbul',c:'Turkey',lat:41.01,lng:28.98,pop:'16m'},
+  {name:'Moscow',c:'Russia',lat:55.76,lng:37.62,pop:'13m'},
+  {name:'Delhi',c:'India',lat:28.61,lng:77.21,pop:'32m'},
+  {name:'Beijing',c:'China',lat:39.90,lng:116.41,pop:'22m'},
+  {name:'Tokyo',c:'Japan',lat:35.68,lng:139.69,pop:'37m'},
+  {name:'Jakarta',c:'Indonesia',lat:-6.21,lng:106.85,pop:'11m'},
+  {name:'Tehran',c:'Iran',lat:35.69,lng:51.39,pop:'9m'},
+  {name:'Riyadh',c:'Saudi Arabia',lat:24.71,lng:46.68,pop:'8m'},
+  {name:'Dhaka',c:'Bangladesh',lat:23.81,lng:90.41,pop:'22m'},
+  {name:'Hanoi',c:'Vietnam',lat:21.03,lng:105.85,pop:'8m'},
+  {name:'Bangkok',c:'Thailand',lat:13.76,lng:100.50,pop:'11m'},
+  {name:'Sydney',c:'Australia',lat:-33.87,lng:151.21,pop:'5m'},
+  {name:'New York',c:'United States',lat:40.71,lng:-74.01,pop:'19m'},
+  {name:'Mexico City',c:'Mexico',lat:19.43,lng:-99.13,pop:'22m'},
+  {name:'São Paulo',c:'Brazil',lat:-23.55,lng:-46.63,pop:'22m'},
+  {name:'Buenos Aires',c:'Argentina',lat:-34.60,lng:-58.38,pop:'15m'},
+  {name:'Lima',c:'Peru',lat:-12.05,lng:-77.04,pop:'11m'},
+  {name:'Bogotá',c:'Colombia',lat:4.71,lng:-74.07,pop:'11m'}
 ];
+const ARCS=[
+  {startLat:30.04,startLng:31.24,endLat:48.86,endLng:2.35},{startLat:35.68,startLng:139.69,endLat:40.71,endLng:-74.01},
+  {startLat:51.51,startLng:-0.13,endLat:28.61,endLng:77.21},{startLat:-33.87,startLng:151.21,endLat:-6.21,endLng:106.85},
+  {startLat:19.43,startLng:-99.13,endLat:-23.55,endLng:-46.63}
+];
+const HEX=[...Array(80)].map((_,i)=>{
+  const p=PLACES[i%PLACES.length];
+  return {lat:p.lat+(Math.random()-0.5)*8, lng:p.lng+(Math.random()-0.5)*10};
+});
 const LINE={
-  hekate:'HEKATE · 2026 hinge: the globe is the room. Zoom is a door. Pick a city, not a face.',
-  paimon:'PAIMON · I announced every gold pin. The band is the satellite layer. You are late. Good.',
-  board:'Board · vow the street, hide the workshop, weigh the Heat, restore the spin, keep the tilt.'
+  hekate:'HEKATE · 2026 hinge: zoom is a door. Today is a country, not a slogan.',
+  paimon:'PAIMON · I announced the gold pins. You are late to the fly-to. Good.',
+  board:'Board · vow the street, hide the workshop, weigh Heat, restore spin, keep tilt.'
 };
 
-const world = Globe()(document.getElementById('globe'))
-  .globeImageUrl(TEX.blue)
+const world=Globe()(document.getElementById('globe'))
+  .globeImageUrl(TEX.natural)
   .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
   .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
-  .atmosphereColor('#7c4dff')
-  .atmosphereAltitude(0.22)
-  .pointsData(CITIES)
+  .atmosphereColor('#7c5cff')
+  .atmosphereAltitude(0.2)
+  .pointsData(PLACES)
   .pointLat('lat').pointLng('lng')
-  .pointColor(()=> '#c9a227')
-  .pointAltitude(0.012)
-  .pointRadius(0.28)
-  .pointLabel(d=>d.name)
-  .onPointClick(openCity)
-  .labelsData(CITIES)
-  .labelLat('lat').labelLng('lng')
-  .labelText('name')
-  .labelSize(0.45)
-  .labelDotRadius(0.12)
-  .labelColor(()=> 'rgba(232,228,220,0.7)')
-  .labelAltitude(0.015);
-world.controls().autoRotate = true;
-world.controls().autoRotateSpeed = 0.45;
-world.controls().enableDamping = true;
-world.pointOfView({ lat:20, lng:10, altitude:2.2 }, 0);
+  .pointColor(()=>'#c9a227').pointAltitude(0.01).pointRadius(0.22)
+  .pointLabel(d=>d.name+', '+d.c)
+  .onPointClick(d=>flyTo(d, d.name+' · '+d.c))
+  .arcsData(ARCS)
+  .arcColor(()=>['#7c5cff','#c9a227']).arcStroke(0.4).arcDashLength(0.4).arcDashGap(0.2).arcDashAnimateTime(4000)
+  .hexBinPointsData(HEX)
+  .hexBinPointLat('lat').hexBinPointLng('lng')
+  .hexAltitude(d=>0.02+d.points.length*0.01)
+  .hexTopColor(()=>'#3dd6c688').hexSideColor(()=>'#3dd6c622')
+  .hexBinResolution(3);
+world.controls().autoRotate=true;
+world.controls().autoRotateSpeed=0.4;
+world.pointOfView({lat:18,lng:20,altitude:2.4});
 
-function openCity(d){
-  const el=document.getElementById('card');
-  el.style.display='block';
-  const seen=!!s.seen[d.name];
-  if(!seen){ s.seen[d.name]=1; s.lumen+=3; say('First light over '+d.name+'.'); save(); render(); }
-  el.innerHTML='<h3>'+d.name+'</h3><div class="meta">'+d.r+' · about '+d.pop+'</div>'+d.note+
-    '<div id="stats"><i><b>'+d.pop+'</b>people</i><i><b>'+(s.seen[d.name]?'yes':'no')+'</b>visited</i><i><b>'+d.lat.toFixed(1)+'</b>lat</i><i><b>'+d.lng.toFixed(1)+'</b>lng</i></div>';
+function say(t){ document.getElementById('say').textContent=t; }
+function flyTo(p, title, extra){
+  world.pointOfView({lat:p.lat,lng:p.lng,altitude:0.85}, 1600);
+  document.getElementById('alt').value=0.85;
+  document.getElementById('altN').textContent='0.85';
+  if(!s.seen[p.name]){ s.seen[p.name]=1; s.lumen+=3; save(); render(); }
+  world.htmlElementsData([{lat:p.lat,lng:p.lng,name:p.name,c:p.c,pop:p.pop,extra:extra||''}]);
+  say((title||p.name)+' — the world turned to face it.');
+}
+world.htmlElement(d=>{
+  const el=document.createElement('div');
+  el.id='card';
+  el.innerHTML='<h3>'+d.name+'</h3>'+(d.c||'')+' · '+ (d.pop||'') + (d.extra?('<div style="margin-top:6px;color:#c8bdd4">'+d.extra+'</div>'):'');
+  return el;
+});
+world.htmlLat('lat').htmlLng('lng').htmlAltitude(0.04);
+
+function matchPlace(text){
+  const t=(text||'').toLowerCase();
+  return PLACES.find(p=>t.includes(p.c.toLowerCase())||t.includes(p.name.toLowerCase())) || PLACES[Math.floor(Math.random()*PLACES.length)];
 }
 
-document.querySelectorAll('#dock [data-tex]').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('#dock [data-tex]').forEach(x=>x.classList.remove('on'));
+async function loadToday(){
+  const n=new Date();
+  const feed=document.getElementById('feed');
+  feed.textContent='Loading public record…';
+  try{
+    const r=await fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${n.getUTCMonth()+1}/${n.getUTCDate()}`);
+    const j=await r.json();
+    const ev=(j.events||[]).slice(0,8);
+    feed.innerHTML='';
+    ev.forEach(e=>{
+      const place=matchPlace(e.text);
+      const card=document.createElement('div');
+      card.className='ev';
+      card.innerHTML='<b>'+e.year+' · '+place.c+'</b><span>'+String(e.text||'').slice(0,140)+'</span>';
+      card.onclick=()=>flyTo(place, e.year+' · '+place.c, String(e.text||'').slice(0,180));
+      feed.appendChild(card);
+    });
+    document.getElementById('evSub').textContent='On this day · '+n.toDateString();
+    return ev;
+  }catch(err){
+    feed.innerHTML='<div class="ev"><b>Archive blinked</b><span>Try Today again.</span></div>';
+    return [];
+  }
+}
+
+document.getElementById('bDay').onclick=async()=>{
+  const ev=await loadToday();
+  if(!ev.length) return;
+  const first=ev[0];
+  const place=matchPlace(first.text);
+  flyTo(place, first.year+' · '+place.c, String(first.text||'').slice(0,180));
+};
+
+document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.mode').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
-  world.globeImageUrl(TEX[b.dataset.tex]);
+  const m=b.dataset.m;
+  world.globeImageUrl(TEX[m]);
+  world.atmosphereColor(m==='ir'?'#ff5a2a': m==='data'?'#3dd6c6':'#7c5cff');
+  world.pointColor(()=> m==='ir'?'#ff7a3a':'#c9a227');
 });
-document.getElementById('bPts').onclick=function(){
-  this.classList.toggle('on');
-  world.pointsData(this.classList.contains('on')?CITIES:[]);
-  world.labelsData(this.classList.contains('on')?CITIES:[]);
+document.getElementById('bCity').onclick=function(){ this.classList.toggle('on'); world.pointsData(this.classList.contains('on')?PLACES:[]); };
+document.getElementById('bArc').onclick=function(){ this.classList.toggle('on'); world.arcsData(this.classList.contains('on')?ARCS:[]); };
+document.getElementById('bHex').onclick=function(){ this.classList.toggle('on'); world.hexBinPointsData(this.classList.contains('on')?HEX:[]); };
+document.getElementById('alt').oninput=e=>{
+  const v=+e.target.value; document.getElementById('altN').textContent=v.toFixed(2);
+  const pov=world.pointOfView(); world.pointOfView({lat:pov.lat,lng:pov.lng,altitude:v});
 };
-document.getElementById('bAtm').onclick=function(){
-  this.classList.toggle('on');
-  world.atmosphereAltitude(this.classList.contains('on')?0.22:0);
+document.getElementById('spin').oninput=e=>{
+  const v=+e.target.value; document.getElementById('spN').textContent=v.toFixed(2);
+  world.controls().autoRotate=v>0; world.controls().autoRotateSpeed=v;
 };
-document.getElementById('bSpin').onclick=function(){
-  this.classList.toggle('on');
-  world.controls().autoRotate=this.classList.contains('on');
-};
+document.getElementById('tL').onclick=()=>{ document.getElementById('left').classList.toggle('hideL'); document.body.classList.toggle('lOff'); };
+document.getElementById('tR').onclick=()=>{ document.getElementById('right').classList.toggle('hideR'); document.body.classList.toggle('rOff'); };
 document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>say(LINE[b.dataset.ask]));
 
 function load(){ try{return JSON.parse(localStorage.getItem('ww_public')||'');}catch(e){return null;} }
@@ -171,7 +263,6 @@ function pow(){ return 1+s.click+s.halo*0.25; }
 function lps(){ return (s.auto*0.4)*(1+s.halo*0.05); }
 function need(){ return 20+s.level*15; }
 function fmt(n){ return n>=1000?n.toFixed(1):Math.floor(n*10)/10; }
-function say(t){ document.getElementById('say').textContent=t; }
 function render(){
   document.getElementById('lum').textContent=fmt(s.lumen);
   document.getElementById('lps').textContent=fmt(lps());
@@ -184,15 +275,14 @@ function render(){
   });
 }
 function addXp(n){ s.xp=(s.xp||0)+n; while(s.xp>=need()){ s.xp-=need(); s.level++; say('Level '+s.level); } }
-addEventListener('keydown',e=>{
-  if(e.code==='Space'){ e.preventDefault(); s.lumen+=pow(); s.clicks++; addXp(1); save(); render(); }
-});
+addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); s.lumen+=pow(); s.clicks++; addXp(1); save(); render(); }});
 document.getElementById('bAuto').onclick=()=>{ const c=cost(15,s.auto); if(s.lumen<c)return; s.lumen-=c; s.auto++; save(); render(); };
 document.getElementById('bClick').onclick=()=>{ const c=cost(20,s.click); if(s.lumen<c)return; s.lumen-=c; s.click++; save(); render(); };
 document.getElementById('bHalo').onclick=()=>{ const c=cost(30,s.halo); if(s.lumen<c)return; s.lumen-=c; s.halo++; save(); render(); };
 (function(){ const dt=Math.min(8*3600,(Date.now()-(s.t||Date.now()))/1000); const g=lps()*dt; if(g>1){ s.lumen+=g; say('While away +'+fmt(g)); }})();
 setInterval(()=>{ s.lumen+=lps(); if(lps()>0) addXp(0.04); save(); render(); },1000);
 render();
+loadToday();
 </script>
 </body>
 </html>
