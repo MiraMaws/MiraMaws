@@ -1,0 +1,76 @@
+{
+  "updated": "2026-08-24T06:56:46",
+  "n": 10,
+  "lessons": [
+    {
+      "ts": "2026-08-24T06:56:46",
+      "id": "el_1787543806_0",
+      "god": "ANUBIS",
+      "domain": "news",
+      "line": "APOE4 may shrink brain cells years before Alzheimer's symptoms (ScienceDaily, Aug 2026)."
+    },
+    {
+      "ts": "2026-08-24T06:56:46",
+      "id": "el_1787543806_1",
+      "god": "ASMODEUS",
+      "domain": "physics",
+      "line": "CERN: tiny 'Big Bang' from colliding small nuclei \u2014 heat as origin story."
+    },
+    {
+      "ts": "2026-08-24T06:56:46",
+      "id": "el_1787543806_2",
+      "god": "AMUN-RA",
+      "domain": "ai-science",
+      "line": "AlphaFold-class work: AI as hidden sun over protein fold space (Kohli / DeepMind essay)."
+    },
+    {
+      "ts": "2026-08-24T06:56:46",
+      "id": "el_1787543806_3",
+      "god": "TUTANKHAMUN",
+      "domain": "materials",
+      "line": "GNoME-style models: hundreds of thousands of predicted-stable materials \u2014 restore unused recipes."
+    },
+    {
+      "ts": "2026-08-24T06:56:46",
+      "id": "el_1787543806_4",
+      "god": "MAAT",
+      "domain": "algorithms",
+      "line": "Recommenders: inventory \u2192 filter \u2192 ANN \u2192 rank by predicted engagement. Measure the scale, not the shout."
+    },
+    {
+      "ts": "2026-08-24T06:56:46",
+      "id": "el_1787543806_5",
+      "god": "ASTARTE",
+      "domain": "networks",
+      "line": "Friend-of-friend rewiring fragments graphs into echo chambers. A city is a vow, not a clique."
+    },
+    {
+      "ts": "2026-08-24T06:56:46",
+      "id": "el_1787543806_6",
+      "god": "HEKATE",
+      "domain": "quantum",
+      "line": "Entanglement: joint state, not a product. Measure one hinge, the other is already named."
+    },
+    {
+      "ts": "2026-08-24T06:56:46",
+      "id": "el_1787543806_7",
+      "god": "PAIMON",
+      "domain": "quantum",
+      "line": "Einstein called it spooky. I put it on a sandwich board. The correlation is the joke."
+    },
+    {
+      "ts": "2026-08-24T06:56:46",
+      "id": "el_1787543806_8",
+      "god": "ANUBIS",
+      "domain": "chemistry",
+      "line": "Berkeley Lab: AI predicts solid-state reaction pathways including impurities, in minutes."
+    },
+    {
+      "ts": "2026-08-24T06:56:46",
+      "id": "el_1787543806_9",
+      "god": "AMUN-RA",
+      "domain": "ai",
+      "line": "Argonne MProt-DPO / Aurora: protein design at exascale \u2014 unpublished until it works."
+    }
+  ]
+}
