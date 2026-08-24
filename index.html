@@ -62,9 +62,22 @@
   .ev b { display:block; font-size:11px; color:var(--g); }
   .ev span { font-size:10px; color:var(--d); }
   #feed { overflow:auto; flex:1; min-height:0; }
-  #pin { position:fixed; left:50%; bottom:118px; transform:translateX(-50%); z-index:9;
-    width:min(380px,86vw); display:none; background:#061018f4; border:1px solid var(--c);
-    box-shadow:0 0 0 1px #ff2ea644, 0 16px 50px #000c; padding:10px 12px 12px; }
+  #pin { position:fixed; left:50%; bottom:118px; z-index:9;
+    width:min(420px,90vw); display:none; background:#061018f4; border:1px solid var(--c);
+    box-shadow:0 0 0 1px #ff2ea644, 0 16px 50px #000c; padding:10px 12px 12px;
+    transform:translate(-50%, 30%) scale(.35); opacity:0; transform-origin:50% 120%;
+    transition:transform .55s cubic-bezier(.16,1,.3,1), opacity .35s; }
+  #pin.on { display:block; transform:translate(-50%,0) scale(1); opacity:1; }
+  #pin.big { width:min(920px,96vw); bottom:16px; }
+  #brief { display:none; margin-top:8px; padding:8px; border:1px solid #39f6ff55; background:#02080ccc;
+    font-family:ui-monospace,Consolas,monospace; font-size:11px; line-height:1.45; color:#9ff;
+    animation:glitch 2.2s linear infinite; max-height:28vh; overflow:auto; }
+  #brief b { color:#f0c14b; }
+  @keyframes glitch {
+    0%,100% { text-shadow:1px 0 #f0f, -1px 0 #0ff; }
+    40% { text-shadow:-1px 0 #f0f, 1px 0 #0ff; }
+    70% { text-shadow:2px 0 #0ff, -2px 0 #f0f; }
+  }
   #pin h3 { color:var(--c); font-size:14px; letter-spacing:.08em; }
   #pin .meta { color:var(--d); font-size:11px; margin:3px 0 6px; }
   #pinX { position:absolute; top:6px; right:8px; border:0; background:none; color:var(--m); cursor:pointer; font-size:16px; }
@@ -105,6 +118,15 @@
   .arch { background:#030508; border:1px solid #111; padding:4px; max-height:18vh; overflow:auto; flex:0 0 auto; }
   .arch .ev { padding:4px; margin:3px 0; }
   .arch .ev b { color:#667; font-size:10px; }
+  #mkts { max-height:22vh; overflow:hidden; font-size:10px; }
+  .mk { display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px solid #0c2230; }
+  .mk b { width:64px; color:var(--c); }
+  .mk .px { margin-left:auto; font-variant-numeric:tabular-nums; }
+  .mk .up { color:#3ddc84; }
+  .mk .dn { color:#ff4d6d; }
+  .ytctl { display:flex; gap:6px; margin-top:6px; }
+  .ytctl button, .ytctl a { flex:1; text-align:center; padding:6px; border:1px solid var(--line);
+    background:#04141c; color:var(--c); font:inherit; font-size:11px; cursor:pointer; text-decoration:none; }
   .srcs { display:flex; gap:4px; margin-top:6px; flex-wrap:wrap; }
   .src { min-width:calc(50% - 4px); }
   @media (max-width: 820px) {
@@ -165,8 +187,16 @@
   <h3 id="pinT"></h3>
   <div class="meta" id="pinM"></div>
   <p id="pinB" style="line-height:1.5;max-height:7.5em;overflow:auto;white-space:pre-wrap"></p>
-  <div id="ytwrap" style="display:none;margin-top:8px;aspect-ratio:16/9;background:#000;border:1px solid #143044"></div>
-  <a id="ytlink" href="#" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:#39f6ff;font-size:12px">Open on YouTube ↗</a>
+  <div id="ytwrap" style="display:none;margin-top:8px;background:#000;border:1px solid #143044">
+    <div id="ytframe" style="aspect-ratio:16/9"></div>
+    <div class="ytctl">
+      <button type="button" id="ytPause">Pause</button>
+      <button type="button" id="ytPlay">Play</button>
+      <button type="button" id="ytBig">Bigger</button>
+      <a id="ytlink" href="#" target="_blank" rel="noopener">YouTube ↗</a>
+    </div>
+  </div>
+  <div id="brief"></div>
 </div>
 <button class="tog" id="tL" type="button">‹</button>
 <button class="tog" id="tR" type="button">›</button>
@@ -197,6 +227,9 @@
   <div class="mrow"><span>Quakes</span><b id="mQ">…</b></div>
   <p id="sync">sync —</p>
   <button class="item" id="bDay" type="button">TODAY</button>
+  <button class="item" id="bRadio" type="button">RADIO · NASA</button>
+  <h2>MARKETS</h2>
+  <div id="mkts"></div>
   <div class="srcs">
     <button class="src" type="button" data-open="https://en.wikipedia.org/wiki/Portal:Current_events">🌐 Wiki</button>
     <button class="src" type="button" data-open="https://www.reddit.com/r/worldnews/">👽 Reddit</button>
@@ -377,6 +410,9 @@ function flyTo(p, title, extra){
   document.getElementById('pinM').textContent=((p.name||'')+(p.c?(' · '+p.c):''))+(p.pop?(' · '+p.pop):'');
   document.getElementById('pinB').textContent=strip(extra||title||'');
   pin.style.display='block';
+  requestAnimationFrame(()=>pin.classList.add('on'));
+  const br=document.getElementById('brief');
+  if(br){ br.style.display='none'; br.textContent=''; }
   paintNews();
   pullHeat(p);
   say((title||p.name)+' — ask a star-sigil.');
@@ -407,34 +443,98 @@ async function locate(text){
     const r=await fetch('https://photon.komoot.io/api/?limit=1&q='+encodeURIComponent(q));
     const j=await r.json();
     const f=j.features&&j.features[0];
-    if(!f) return null;
-    const [lng,lat]=f.geometry.coordinates;
-    const props=f.properties||{};
-    return {name:props.name||props.city||q, c:props.country||props.state||'World', lat, lng, pop:''};
-  }catch(e){ return null; }
+    if(f){
+      const [lng,lat]=f.geometry.coordinates;
+      const props=f.properties||{};
+      return {name:props.name||props.city||q, c:props.country||props.state||'World', lat, lng, pop:''};
+    }
+  }catch(e){}
+  return {name:'Earth', c:'World', lat:20, lng:10, pop:''};
 }
 
-function ytFor(title){
-  const q=encodeURIComponent(String(title||'world news')+' news');
-  return {
-    search:'https://www.youtube.com/results?search_query='+q,
-    embed:'https://www.youtube.com/embed?listType=search&list='+q
-  };
+async function wikiExtract(title){
+  try{
+    const j=await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(title.replace(/ /g,'_'))).then(r=>r.json());
+    return strip(j.extract||j.description||'');
+  }catch(e){ return ''; }
 }
-function showVideo(title){
+
+let ytFrame=null;
+function ytCmd(fn){
+  try{
+    const ifr=document.querySelector('#ytframe iframe');
+    if(!ifr||!ifr.contentWindow) return;
+    ifr.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:[]}), '*');
+  }catch(e){}
+}
+async function findYtId(title){
+  const q=encodeURIComponent(String(title||'world news')+' news');
+  const urls=[
+    'https://pipedapi.kavin.rocks/search?q='+q+'&filter=videos',
+    'https://pipedapi.adminforge.de/search?q='+q+'&filter=videos',
+    'https://pipedapi.nosebs.ru/search?q='+q+'&filter=videos'
+  ];
+  for(const u of urls){
+    try{
+      const j=await fetch(u).then(r=>r.json());
+      const items=Array.isArray(j)?j:(j.items||[]);
+      const v=items.find(x=>(x.type==='video'||x.url||x.id||x.videoId));
+      if(!v) continue;
+      const id=v.videoId||v.id||(String(v.url||'').match(/v=([\w-]{11})/)||[])[1]||(String(v.url||'').split('/').pop());
+      if(id && String(id).length>=11) return String(id).replace(/^\/watch\?v=/,'').slice(0,11);
+    }catch(e){}
+  }
+  return null;
+}
+async function showVideo(title){
   pauseChatter();
-  const y=ytFor(title);
   const wrap=document.getElementById('ytwrap');
+  const box=document.getElementById('ytframe');
   wrap.style.display='block';
-  wrap.innerHTML='';
+  box.textContent='Finding a video…';
+  const id=await findYtId(title);
+  const search='https://www.youtube.com/results?search_query='+encodeURIComponent(title+' news');
+  document.getElementById('ytlink').href=id?('https://www.youtube.com/watch?v='+id):search;
+  box.innerHTML='';
+  if(!id){
+    box.innerHTML='<p style="padding:12px;color:#9ab">No embed found. Use YouTube ↗</p>';
+    return;
+  }
   const f=document.createElement('iframe');
-  f.src=y.embed;
+  f.src='https://www.youtube.com/embed/'+id+'?enablejsapi=1&rel=0&autoplay=1';
   f.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
   f.allowFullscreen=true;
   f.style.cssText='width:100%;height:100%;border:0';
-  wrap.appendChild(f);
-  const a=document.getElementById('ytlink');
-  a.href=y.search;
+  box.appendChild(f);
+  ytFrame=f;
+  clearTimeout(window.__briefT);
+  window.__briefT=setTimeout(runBrief, 75000);
+}
+function boardBrief(title, body){
+  const t=(title+' '+body).toLowerCase();
+  const heat=/war|attack|bomb|quake|fire|crash|kill|dead|strike/.test(t);
+  const vow=/peace|deal|treaty|vote|elect|law|court/.test(t);
+  const hide=/secret|leak|spy|hack|classif/.test(t);
+  return [
+    '<b>BOARD BRIEF // ORIGINAL READ</b>',
+    'ASTARTE · '+(vow?'A vow is being rewritten in public.':'A city is paying for someone else\'s Heat.'),
+    'ASMODEUS · '+(heat?'Leftover Heat just found a new street. Spend it or it compounds.':'The unused voltage is still in the room.'),
+    'AMUN-RA · Do not parade the brightest sentence. File it. 2026 prefers unpublished moves.',
+    'ANUBIS · Weigh what died in the headline. If nothing died, ask why it was dressed as news.',
+    'TUT · Restore one proper name under this story. Archives outlive pressers.',
+    'MAAT · Keep a tilt. A perfect verdict would stop the year.',
+    'HEKATE · The hinge is not the face on the thumbnail. Pick the door the clip does not sell.',
+    'PAIMON · I announced it too loud. If the band is already there, you are late. Good.',
+    'CONSEQUENCE · '+(heat?'Expect tighter borders and louder money.':'Expect softer language and the same ledger.')
+  ].join('\n');
+}
+function runBrief(){
+  const el=document.getElementById('brief');
+  if(!el) return;
+  el.style.display='block';
+  el.textContent='';
+  el.innerHTML=boardBrief(lastEvent.title, lastEvent.extra).replace(/\n/g,'<br>');
+  resumeChatter();
 }
 
 function seenLoad(){ try{ return new Set(JSON.parse(localStorage.getItem('ww_seen')||'[]')); }catch(e){ return new Set(); } }
@@ -505,7 +605,7 @@ async function ingestFeatured(d){
       ((feat.mostread&&feat.mostread.articles)||[]).slice(0,10).forEach(a=>{
         const name=(a.article||(a.titles&&a.titles.normalized)||'').replace(/_/g,' ');
         if(/^(Main Page|Special:|Wikipedia:|Portal:|File:)/i.test(name)) return;
-        pushStory(name, 'Trending today · '+(a.views||'')+' reads', a.views||0);
+        pushStory(name, a.extract||a.description||'', a.views||0);
       });
       if(feat.tfa){
         const tt=(feat.tfa.titles&&feat.tfa.titles.normalized)||feat.tfa.title;
@@ -535,13 +635,19 @@ async function loadToday(){
     await ingestFeatured(y);
   }
   await ingestHN();
+  for(const s of liveStories){
+    if(!s.text || s.text.length<70){
+      const ex=await wikiExtract(s.title);
+      if(ex) s.text=ex;
+    }
+  }
   try{
     const r=await fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${n.getUTCMonth()+1}/${n.getUTCDate()}`);
     const j=await r.json();
     const ev=j.events||[];
     arch.innerHTML='';
     ev.filter(e=>+e.year<2026).slice(0,6).forEach(e=>{
-      const place=matchPlace(e.text);
+      const place=matchPlace(e.text)||{name:'Earth',c:'World',lat:20,lng:10,pop:''};
       card(arch, e.year+' · '+place.c, String(e.text||'').slice(0,110), place, String(e.text||'').slice(0,160));
     });
   }catch(e){}
@@ -650,7 +756,30 @@ document.getElementById('tR').onclick=()=>{ document.getElementById('right').cla
 document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>say(voice(b.dataset.ask)));
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>window.open(b.dataset.open,'_blank','noopener'));
 const pinEl=document.getElementById('pinX');
-if(pinEl) pinEl.onclick=()=>{ document.getElementById('pin').style.display='none'; const w=document.getElementById('ytwrap'); if(w){ w.style.display='none'; w.innerHTML=''; } resumeChatter(); };
+if(pinEl) pinEl.onclick=()=>{
+  const pin=document.getElementById('pin');
+  pin.classList.remove('on','big');
+  const box=document.getElementById('ytframe');
+  if(box) box.innerHTML='';
+  document.getElementById('ytwrap').style.display='none';
+  setTimeout(()=>{ pin.style.display='none'; }, 400);
+  resumeChatter();
+};
+const ytp=document.getElementById('ytPause');
+const yto=document.getElementById('ytPlay');
+const ytb=document.getElementById('ytBig');
+if(ytp) ytp.onclick=()=>ytCmd('pauseVideo');
+if(yto) yto.onclick=()=>ytCmd('playVideo');
+if(ytb) ytb.onclick=()=>document.getElementById('pin').classList.toggle('big');
+window.addEventListener('message',ev=>{
+  try{
+    const d=typeof ev.data==='string'?JSON.parse(ev.data):ev.data;
+    if(d && (d.event==='onStateChange'||d.info===0) && d.info===0) runBrief();
+  }catch(e){}
+});
+let radioOn=false;
+const bRadio=document.getElementById('bRadio');
+if(bRadio) bRadio.onclick=()=>{ radioOn=!radioOn; if(radioOn) resumeChatter(); else pauseChatter(); bRadio.textContent=radioOn?'RADIO · ON':'RADIO · NASA'; };
 
 const chatter=document.getElementById('chatter');
 function pauseChatter(){ try{ if(chatter) chatter.pause(); }catch(e){} }
@@ -718,9 +847,14 @@ function paintNews(){
 async function openStory(st){
   if(!st){ say('Caught up. New headlines arrive every minute.'); return; }
   seen.add(st.title); seenSave();
-  const place=await locate(st.title+' '+st.text);
-  if(!place){ say('No location found for that story.'); return; }
-  flyTo(place, st.title, st.text);
+  let body=st.text;
+  if(!body || body.length<70 || /^trending today/i.test(body)){
+    const ex=await wikiExtract(st.title);
+    if(ex) body=ex;
+  }
+  if(!body) body=st.title;
+  const place=await locate(st.title+' '+body);
+  flyTo(place, st.title, body);
   showVideo(st.title);
 }
 function nextFresh(){ return liveStories.find(s=>!seen.has(s.title))||null; }
@@ -747,6 +881,37 @@ if(window.matchMedia && matchMedia('(max-width:820px)').matches){
 }
 loadToday().then(()=>{ paintNews(); return syncEarth(); });
 setInterval(()=>{ loadToday().then(()=>{ paintNews(); return syncEarth(); }); }, 60000);
+
+const TICKS=['AAPL','MSFT','NVDA','GOOGL','AMZN','META','TSLA','BRK-B','JPM','V','UNH','XOM','JNJ','WMT','BTC-USD','ETH-USD','GC=F','SI=F','^GSPC','EURUSD=X'];
+let mkOff=0;
+async function pullMarkets(){
+  const host=document.getElementById('mkts'); if(!host) return;
+  const slice=TICKS.slice(mkOff, mkOff+6);
+  mkOff=(mkOff+6)%TICKS.length;
+  const rows=[];
+  for(const t of slice){
+    try{
+      const j=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(t)+'?interval=5m&range=1d').then(r=>r.json());
+      const r=j.chart&&j.chart.result&&j.chart.result[0];
+      const meta=r&&r.meta;
+      const px=meta&&meta.regularMarketPrice;
+      const prev=meta&&meta.chartPreviousClose;
+      if(px==null) continue;
+      const ch=prev?((px-prev)/prev*100):0;
+      rows.push({t, px, ch});
+    }catch(e){}
+  }
+  host.innerHTML='';
+  rows.forEach(x=>{
+    const d=document.createElement('div'); d.className='mk';
+    const up=x.ch>=0;
+    d.innerHTML='<b>'+x.t+'</b><span class="px '+(up?'up':'dn')+'">'+(up?'▲':'▼')+' '+x.px.toFixed(x.px>50?1:3)+' ('+(up?'+':'')+x.ch.toFixed(2)+'%)</span>';
+    host.appendChild(d);
+  });
+  if(!rows.length) host.textContent='Markets feed blocked in this browser.';
+}
+pullMarkets();
+setInterval(pullMarkets, 45000);
 </script>
 </body>
 </html>
