@@ -1,0 +1,12 @@
+{
+  "columns": ["backlog", "doing", "review", "done"],
+  "cards": [
+    {"id": "k1", "col": "done", "title": "Desk live on miramaws.com", "owner": "smith"},
+    {"id": "k2", "col": "done", "title": "Bank of Hell persist", "owner": "amun-ra"},
+    {"id": "k3", "col": "doing", "title": "Kanban + holo memory in desk", "owner": "hekate"},
+    {"id": "k4", "col": "doing", "title": "Daily GitHub backup", "owner": "archivist"},
+    {"id": "k5", "col": "backlog", "title": "EP09 Crimson Interest", "owner": "psychopomp"},
+    {"id": "k6", "col": "backlog", "title": "Lite MCP /api tools", "owner": "smith"},
+    {"id": "k7", "col": "review", "title": "Earth-study lessons", "owner": "anubis"}
+  ]
+}
