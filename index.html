@@ -168,13 +168,35 @@
     transform:translate(80px,-20px); min-width:160px; max-width:280px;
     padding:8px 10px; background:#06140ee8; border:1px solid #2dff7a;
     box-shadow:0 0 16px #2dff7a44, inset 0 0 12px #0008; color:#b8ffd4;
-    font-size:11px; letter-spacing:.06em;
+    font-size:11px; letter-spacing:.06em; overflow:hidden;
   }
-  #locTab:before {
-    content:""; position:absolute; left:-48px; top:50%; width:48px; height:1px; background:#2dff7a;
-    box-shadow:0 0 8px #2dff7a;
+  #locTab.show { display:block; animation:locGlare 9s ease-out forwards; }
+  #locTab.show::after {
+    content:""; position:absolute; inset:-2px; pointer-events:none;
+    background:linear-gradient(110deg, transparent 0 38%, #2dff7acc 50%, transparent 62%);
+    mix-blend-mode:screen; animation:locSweep 9s linear forwards;
   }
-  #locTab b { display:block; color:#2dff7a; font-size:12px; letter-spacing:.12em; }
+  #locTab b { display:block; color:#2dff7a; font-size:12px; letter-spacing:.12em;
+    text-shadow:0 0 8px #2dff7a88; }
+  @keyframes locGlare {
+    0% { opacity:0; filter:blur(1.5px) hue-rotate(40deg); box-shadow:0 0 0 #2dff7a; }
+    6% { opacity:1; filter:none; box-shadow:0 0 28px #2dff7a, 0 0 70px #2dff7a77; }
+    10% { transform:translate(82px,-22px); text-shadow:-2px 0 #ff2ea6, 2px 0 #39f6ff; }
+    13% { transform:translate(78px,-18px); text-shadow:2px 0 #ff2ea6, -2px 0 #39f6ff; }
+    16% { transform:translate(80px,-20px); text-shadow:none; }
+    28% { box-shadow:0 0 36px #2dff7a, inset 0 0 18px #2dff7a33; filter:saturate(1.5); }
+    40% { filter:none; box-shadow:0 0 18px #2dff7a88; }
+    52% { transform:translate(81px,-21px); text-shadow:-1px 0 #39f6ff; }
+    55% { transform:translate(80px,-20px); text-shadow:none; }
+    78% { opacity:1; box-shadow:0 0 22px #2dff7a66; }
+    100% { opacity:0; box-shadow:0 0 0 transparent; filter:blur(1px); }
+  }
+  @keyframes locSweep {
+    0% { transform:translateX(-140%); opacity:.9; }
+    35% { opacity:.7; }
+    70% { transform:translateX(140%); opacity:.15; }
+    100% { transform:translateX(140%); opacity:0; }
+  }
   #mkBar { position:fixed; left:10px; bottom: 122px; z-index:6; width:min(230px,32vw); padding:6px 8px; }
   #mkBar .mktitle { font-size:8px; letter-spacing:.18em; color:#ff9adf; margin-bottom:4px; }
   #mkStrip { font-size:10px; max-height:22vh; overflow:hidden; }
@@ -698,7 +720,7 @@ function markPlace(p){
   if(tab){
     if(!paintSource(lastSource)){
       tab.innerHTML='<b>'+(p.c||p.name||'SITE').toUpperCase()+'</b>'+(p.name||'')+' · '+popPretty(p)+' population';
-      tab.style.display='block';
+      flashLocTab();
     }
   }
   sfx('zoom');
@@ -1092,6 +1114,16 @@ function sourceBits(src){
     url: src.url||''
   };
 }
+let locHideT=0;
+function flashLocTab(){
+  const tab=document.getElementById('locTab'); if(!tab) return;
+  tab.style.display='block';
+  tab.classList.remove('show');
+  void tab.offsetWidth;
+  tab.classList.add('show');
+  clearTimeout(locHideT);
+  locHideT=setTimeout(()=>{ tab.classList.remove('show'); tab.style.display='none'; }, 9000);
+}
 function paintSource(src){
   const s=sourceBits(src);
   if(!s) return false;
@@ -1100,7 +1132,7 @@ function paintSource(src){
   const tab=document.getElementById('locTab');
   if(tab){
     tab.innerHTML='<b>'+s.brand.toUpperCase()+'</b>'+line;
-    tab.style.display='block';
+    flashLocTab();
   }
   const pinM=document.getElementById('pinM');
   if(pinM) pinM.textContent=[s.brand, s.site, s.person, s.date].filter(Boolean).join(' · ');
