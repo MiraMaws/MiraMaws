@@ -342,7 +342,7 @@
     <button class="src" type="button" data-open="https://www.reddit.com/r/worldnews/">👽 Reddit</button>
     <button class="src" type="button" data-open="https://x.com/elonmusk">𝕏 Elon</button>
     <button class="src" type="button" data-open="https://x.com/realDonaldTrump">𝕏 Trump</button>
-    <button class="src" type="button" data-open="https://earthquake.usgs.gov/">📳 USGS</button>
+    <button class="src" type="button" data-open="https://www.usgs.gov/programs/earthquake-hazards">📳 USGS</button>
   </div>
   <svg id="spark" viewBox="0 0 220 40" width="100%" height="40" style="margin-top:6px;background:#03080c"></svg>
 </aside>
@@ -1053,7 +1053,7 @@ async function syncEarth(){
       document.getElementById('mTemp').textContent=(v>=0?'+':'')+v.toFixed(2)+'°';
     } else document.getElementById('mTemp').textContent='n/a';
     paintPins();
-    document.getElementById('sync').textContent='sync '+new Date().toLocaleTimeString()+' · USGS · EONET · wiki';
+    document.getElementById('sync').textContent='sync '+new Date().toLocaleTimeString()+' · USGS Hazards · EONET · wiki';
   }catch(e){
     document.getElementById('sync').textContent='sync partial';
     paintPins();
