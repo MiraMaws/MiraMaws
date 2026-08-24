@@ -376,13 +376,11 @@
     <div class="stat"><span>UTC</span><b id="timeN">—</b></div>
     <div class="stat"><span>HEAT</span><b id="heatN" class="heat">—</b></div>
     <div class="stat"><span>NOW</span><b id="nowN">—</b></div>
-    <div class="stat"><span>NEXT</span><b id="nextN">—</b></div>
   </div>
   <p id="say">CURRENT NEWS is the main desk. Advisors speak when asked.</p>
   <div class="buys">
     <button class="buy" id="bNow" type="button"><b>CURRENT NEWS</b><small>main desk</small></button>
-    <button class="buy" id="bMeme" type="button"><b>TOP MEMES</b><small>tied to the story</small></button>
-    <button class="buy" id="bNext" type="button"><b>Upcoming</b><small>next headline</small></button>
+    <button class="buy" id="bMeme" type="button"><b>TOP MEMES</b><small>actual memes</small></button>
   </div>
   </div>
 </div>
@@ -778,8 +776,8 @@ function pickIds(obj, out){
     if(mm) out.push(mm[1]);
   });
 }
-async function findYtIds(title){
-  const q=encodeURIComponent(String(title||'world news')+' news');
+async function findYtIds(query){
+  const q=encodeURIComponent(String(query||'world news'));
   const urls=[
     'https://api.piped.private.coffee/search?q='+q+'&filter=videos',
     'https://pipedapi.reallyaweso.me/search?q='+q+'&filter=videos',
@@ -847,7 +845,11 @@ function showPinShell(title){
   requestAnimationFrame(()=>pin.classList.add('on'));
 }
 let ytSeq=0;
-async function showVideo(title){
+let usedVids=new Set();
+function takeFreshId(ids){
+  return (ids||[]).find(id=>!usedVids.has(id))||null;
+}
+async function showVideo(title, kind){
   const seq=++ytSeq;
   videoOn=true;
   hushDesk();
@@ -856,23 +858,27 @@ async function showVideo(title){
   const box=document.getElementById('ytframe');
   wrap.style.display='block';
   if(!ytPlayer) box.textContent='Finding the video…';
-  let ids=await findYtIds(title);
+  const q=kind==='meme'
+    ? title
+    : String(title||'world news')+' news';
+  let ids=await findYtIds(q);
   if(seq!==ytSeq) return;
-  if(!ids.length) ids=await findYtIds('world news today breaking');
+  if(!ids.length && kind!=='meme') ids=await findYtIds('world news today breaking');
   if(seq!==ytSeq) return;
-  const id=ids[0];
-  const search='https://www.youtube.com/results?search_query='+encodeURIComponent((title||'world news')+' news');
+  const id=takeFreshId(ids);
+  const search='https://www.youtube.com/results?search_query='+encodeURIComponent(q);
   const link=document.getElementById('ytlink');
   if(link) link.href=id?('https://www.youtube.com/watch?v='+id):search;
   if(id){
-    ytIds=ids; ytI=0;
+    usedVids.add(id);
+    ytIds=ids.filter(x=>!usedVids.has(x)||x===id); ytI=0;
     mountYt(id);
     clearTimeout(window.__briefT);
     window.__briefT=setTimeout(runBrief, 90000);
     return;
   }
   if(ytPlayer) return;
-  box.innerHTML='<p style="padding:12px;color:#d8c0f0">No embed yet. <a href="'+search+'" target="_blank" rel="noopener">Open YouTube ↗</a></p>';
+  box.innerHTML='<p style="padding:12px;color:#d8c0f0">No unused clip. <a href="'+search+'" target="_blank" rel="noopener">Open YouTube ↗</a></p>';
 }
 function boardBrief(title, body){
   const t=(title+' '+body).toLowerCase();
@@ -1235,14 +1241,43 @@ async function pullHeat(p){
   }catch(e){}
 }
 function paintNews(){
-  const now=liveStories.length?liveStories[(Math.max(0,newsI-1))%liveStories.length]:null;
-  const nxt=liveStories.length?liveStories[newsI%liveStories.length]:null;
+  const fresh=liveStories.filter(s=>!seen.has(s.title));
+  const now=fresh[0]||liveStories[0]||null;
   const cut=t=>String(t||'—').slice(0,22);
-  document.getElementById('nowN').textContent=cut(now&&now.title||lastEvent.title);
-  document.getElementById('nextN').textContent=cut(nxt&&nxt.title);
+  const nowEl=document.getElementById('nowN');
+  if(nowEl) nowEl.textContent=cut(now&&now.title||lastEvent.title);
   document.getElementById('popN').textContent=popStr(worldPop());
   document.getElementById('timeN').textContent=utcStr();
 }
+async function playStory(){
+  say('CURRENT NEWS…');
+  if(!liveStories.length) await loadToday();
+  let st=liveStories.find(s=>!seen.has(s.title));
+  if(!st){
+    await loadToday();
+    st=liveStories.find(s=>!seen.has(s.title));
+  }
+  if(!st){ say('Caught up. New pack in a minute.'); return; }
+  showPinShell(st.title);
+  await openStory(st);
+}
+document.getElementById('bNow').onclick=()=>playStory();
+const MEME_Q=[
+  'funny meme compilation 2026',
+  'dank memes today',
+  'best memes this week',
+  'vine boom meme',
+  'shitpost meme video',
+  'internet memes short funny'
+];
+let memeI=0;
+const bMeme=document.getElementById('bMeme');
+if(bMeme) bMeme.onclick=async()=>{
+  const q=MEME_Q[memeI++%MEME_Q.length];
+  say('TOP MEMES · '+q);
+  showPinShell('MEME');
+  await showVideo(q, 'meme');
+};
 async function openStory(st){
   if(!st){ say('Caught up. New headlines arrive every minute.'); return; }
   seen.add(st.title); seenSave();
@@ -1257,26 +1292,6 @@ async function openStory(st){
   const place=await locate(st.title+' '+body);
   flyTo(place, st.title, body);
 }
-let playI=0;
-async function playStory(step){
-  say(step?'Upcoming…':'CURRENT NEWS…');
-  if(!liveStories.length) await loadToday();
-  if(!liveStories.length){ say('No headline yet.'); return; }
-  if(step) playI=(playI+1)%liveStories.length;
-  else if(playI>=liveStories.length) playI=0;
-  const st=liveStories[playI];
-  showPinShell(st.title);
-  await openStory(st);
-}
-document.getElementById('bNow').onclick=()=>playStory(false);
-document.getElementById('bNext').onclick=()=>playStory(true);
-const bMeme=document.getElementById('bMeme');
-if(bMeme) bMeme.onclick=async()=>{
-  const hook=lastEvent.title||'world news';
-  say('TOP MEMES · tied to '+hook);
-  showPinShell('MEME · '+hook);
-  await showVideo(hook+' meme compilation');
-};
 const bPop=document.getElementById('bPop');
 if(bPop) bPop.onclick=()=>say('World population (modeled UN-range clock): '+popStr(worldPop())+'. Not a census office.');
 setInterval(()=>{
