@@ -5,64 +5,65 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>White Wings</title>
 <style>
-  :root { --g:#c9a227; --p:#7c5cff; --ink:#e8e4f0; --d:#8b8498; --bg:#07070e; --pan:#101018f5; --line:#232333; }
+  :root { --g:#f0c14b; --c:#39f6ff; --m:#ff2ea6; --ink:#eaf6ff; --d:#7f93a8; --bg:#03060d; --pan:#061018ee; --line:#143044; }
   * { box-sizing:border-box; margin:0; }
-  html,body,#globe { height:100%; background:var(--bg); color:var(--ink); font-family:ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
+  html,body,#globe { height:100%; background:var(--bg); color:var(--ink); font-family:"Segoe UI",ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
   #globe { position:fixed; inset:0; }
-  .side { position:fixed; top:12px; bottom:92px; z-index:6; width:268px; background:var(--pan);
-    border:1px solid var(--line); border-radius:12px; padding:10px; overflow:auto;
-    transition:transform .25s ease; }
-  #left { left:12px; }
-  #right { right:12px; }
-  .side.hideL { transform:translateX(calc(-100% - 20px)); }
-  .side.hideR { transform:translateX(calc(100% + 20px)); }
-  .tog { position:fixed; top:14px; z-index:7; width:28px; height:28px; border-radius:8px;
-    border:1px solid var(--line); background:var(--pan); color:var(--g); cursor:pointer; }
-  #tL { left:286px; }
-  #tR { right:286px; }
-  .side.hideL + * { }
-  body.lOff #tL { left:12px; }
-  body.rOff #tR { right:12px; }
-  h1 { font-size:13px; letter-spacing:.12em; color:var(--g); font-weight:600; }
-  .sub { color:var(--d); font-size:11px; margin:2px 0 10px; }
-  h2 { font-size:10px; letter-spacing:.14em; color:var(--d); margin:12px 0 6px; }
-  button.item, .mode { display:block; width:100%; text-align:left; margin:3px 0; padding:7px 8px;
-    border-radius:8px; border:1px solid var(--line); background:#0c0c14; color:var(--ink);
-    font:inherit; cursor:pointer; font-size:12px; }
+  .side { position:fixed; top:10px; bottom:108px; z-index:6; width:250px; background:var(--pan);
+    border:1px solid var(--line); border-radius:4px; padding:8px 9px; overflow:hidden;
+    box-shadow:0 0 0 1px #39f6ff22, 0 12px 40px #000a; }
+  #left { left:10px; }
+  #right { right:10px; display:flex; flex-direction:column; }
+  .side.hideL { transform:translateX(calc(-100% - 18px)); }
+  .side.hideR { transform:translateX(calc(100% + 18px)); }
+  .tog { position:fixed; top:12px; z-index:7; width:26px; height:26px; border-radius:2px;
+    border:1px solid var(--c); background:#041018; color:var(--c); cursor:pointer; font-weight:700; }
+  #tL { left:266px; }
+  #tR { right:266px; }
+  body.lOff #tL { left:10px; }
+  body.rOff #tR { right:10px; }
+  h1 { font-size:12px; letter-spacing:.22em; color:var(--c); font-weight:700; }
+  .sub { color:var(--d); font-size:10px; margin:2px 0 6px; }
+  h2 { font-size:9px; letter-spacing:.16em; color:var(--m); margin:7px 0 4px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+  button.item, .mode { display:block; width:100%; text-align:center; margin:0; padding:6px 4px;
+    border-radius:2px; border:1px solid var(--line); background:#04141c; color:var(--ink);
+    font:inherit; cursor:pointer; font-size:10px; letter-spacing:.06em; text-transform:uppercase; }
+  button.item.on, .mode.on { border-color:var(--c); color:var(--c); box-shadow:inset 0 0 10px #39f6ff33; }
   #bDay {
-    margin:10px 0 6px; padding:14px 12px; font-size:16px; font-weight:800; letter-spacing:.08em;
-    text-align:center; color:#1a1408; background:linear-gradient(180deg,#ffe56a,#c9a227 55%,#8a6a14);
-    border:1px solid #ffe56a; border-radius:12px; box-shadow:0 0 18px #c9a22788, 0 0 2px #fff8;
-    animation:flash 1.6s ease-in-out infinite;
+    margin:8px 0 4px; padding:12px 8px; font-size:15px; font-weight:800; letter-spacing:.2em;
+    text-align:center; color:#081018; background:linear-gradient(180deg,#fff38a,#f0c14b 50%,#b8860b);
+    border:1px solid #fff6b0; box-shadow:0 0 22px #f0c14b99; animation:flash 1.5s ease-in-out infinite;
   }
-  #bDay:hover { filter:brightness(1.08); }
-  @keyframes flash { 50% { box-shadow:0 0 28px #ffe56acc, 0 0 6px #fff; } }
-  label.sl { display:flex; justify-content:space-between; font-size:11px; color:var(--d); margin:8px 0 2px; }
-  input[type=range] { width:100%; accent-color:var(--p); }
-  .ev { border:1px solid var(--line); border-radius:8px; padding:8px; margin:6px 0; cursor:pointer; background:#0c0c14; }
-  .ev:hover { border-color:var(--p); }
-  .ev b { display:block; font-size:12px; color:var(--g); }
-  .ev span { font-size:11px; color:var(--d); }
-  #card { position:fixed; z-index:8; min-width:180px; max-width:240px; background:#101018ee;
-    border:1px solid var(--p); border-radius:10px; padding:8px 10px; font-size:12px; pointer-events:none;
-    box-shadow:0 8px 24px #0008; }
-  #card h3 { color:var(--g); font-size:13px; }
-  #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:6; width:min(520px,70vw);
-    padding:8px 10px 10px; }
-  .row { display:flex; gap:6px; }
-  .stat { flex:1; background:var(--pan); border:1px solid var(--line); border-radius:8px; text-align:center; padding:5px; }
-  .stat span { display:block; font-size:9px; letter-spacing:.1em; color:var(--d); }
-  .buys { display:flex; gap:6px; margin-top:6px; }
-  .buy { flex:1; text-align:left; padding:6px; border-radius:8px; border:1px solid var(--line);
-    background:var(--pan); color:var(--ink); font:inherit; cursor:pointer; }
-  .buy.go { border-color:var(--g); }
-  .buy:disabled { opacity:.35; }
-  .buy small { display:block; color:var(--d); }
-  #say { text-align:center; font-size:12px; color:#c8bdd4; min-height:1.6em; margin:5px 0; }
-  .dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; }
-  .heat { color:#ff8a4a; }
+  @keyframes flash { 50% { box-shadow:0 0 32px #ffe56a; } }
+  label.sl { display:flex; justify-content:space-between; font-size:10px; color:var(--d); margin:5px 0 1px; }
+  input[type=range] { width:100%; accent-color:var(--c); }
+  .ev { border:1px solid var(--line); border-radius:2px; padding:6px 7px; margin:4px 0; cursor:pointer; background:#041018; }
+  .ev:hover { border-color:var(--c); }
+  .ev b { display:block; font-size:11px; color:var(--g); }
+  .ev span { font-size:10px; color:var(--d); }
+  #feed { overflow:auto; flex:1; min-height:0; }
+  #pin { position:fixed; left:50%; bottom:118px; transform:translateX(-50%); z-index:9;
+    width:min(380px,86vw); display:none; background:#061018f4; border:1px solid var(--c);
+    box-shadow:0 0 0 1px #ff2ea644, 0 16px 50px #000c; padding:10px 12px 12px; }
+  #pin h3 { color:var(--c); font-size:14px; letter-spacing:.08em; }
+  #pin .meta { color:var(--d); font-size:11px; margin:3px 0 6px; }
+  #pinX { position:absolute; top:6px; right:8px; border:0; background:none; color:var(--m); cursor:pointer; font-size:16px; }
+  #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:6; width:min(640px,78vw);
+    padding:8px 10px 10px; background:linear-gradient(transparent,#03060dee); }
+  .row { display:flex; gap:5px; }
+  .stat { flex:1; background:var(--pan); border:1px solid var(--line); border-radius:2px; text-align:center; padding:4px; }
+  .stat span { display:block; font-size:8px; letter-spacing:.12em; color:var(--d); }
+  .buys { display:flex; gap:5px; margin-top:5px; }
+  .buy, .src { flex:1; text-align:center; padding:6px 4px; border-radius:2px; border:1px solid var(--line);
+    background:#061018; color:var(--ink); font:inherit; cursor:pointer; font-size:11px; }
+  .buy:hover, .src:hover { border-color:var(--c); color:var(--c); }
+  .buy small { display:block; color:var(--d); font-size:9px; }
+  #say { text-align:center; font-size:11px; color:#b7e6ff; min-height:1.5em; margin:4px 0; }
+  .dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:4px; }
+  .heat { color:#ff7a3a; }
   #sol { position:fixed; inset:0; z-index:1; pointer-events:none; }
-  .pl { position:absolute; left:50%; top:46%; border-radius:50%; margin:0; box-shadow:0 0 8px currentColor; }
+  .pl { position:absolute; left:50%; top:44%; border-radius:50%; box-shadow:0 0 8px currentColor; }
   .pl.me { width:6px; height:6px; background:#9aa; color:#9aa; animation:orb 18s linear infinite; }
   .pl.ve { width:8px; height:8px; background:#e8c090; color:#e8c090; animation:orb 28s linear infinite reverse; }
   .pl.ma { width:7px; height:7px; background:#c44; color:#c44; animation:orb 44s linear infinite; }
@@ -74,13 +75,17 @@
     from { transform:rotate(0deg) translateX(var(--r, 38vmin)) rotate(0deg); }
     to { transform:rotate(360deg) translateX(var(--r, 38vmin)) rotate(-360deg); }
   }
-  .mrow { display:flex; justify-content:space-between; gap:8px; font-size:11px; padding:4px 0; border-bottom:1px solid #1a1a24; }
-  .mrow b { color:var(--g); font-variant-numeric:tabular-nums; }
-  #sync { font-size:10px; color:#6a9a78; margin-top:6px; }
-  .arch { background:#050508; border:1px solid #111; border-radius:8px; padding:6px; max-height:26vh; overflow:auto; }
-  .arch .ev { padding:5px; margin:4px 0; background:#08080c; }
-  .arch .ev b { color:#6a6570; font-size:10px; }
-  .arch .ev span { color:#4a4650; font-size:10px; }
+  .sig { position:fixed; z-index:5; width:34px; height:34px; border-radius:50%; border:1px solid #39f6ff66;
+    background:#041018cc; color:var(--g); font-size:16px; cursor:pointer; display:grid; place-items:center;
+    box-shadow:0 0 12px #39f6ff33; }
+  .sig:hover { border-color:var(--g); transform:scale(1.1); }
+  .mrow { display:flex; justify-content:space-between; font-size:10px; padding:2px 0; border-bottom:1px solid #0c2230; }
+  .mrow b { color:var(--c); font-variant-numeric:tabular-nums; }
+  #sync { font-size:9px; color:#4a8; margin-top:4px; }
+  .arch { background:#030508; border:1px solid #111; padding:4px; max-height:18vh; overflow:auto; flex:0 0 auto; }
+  .arch .ev { padding:4px; margin:3px 0; }
+  .arch .ev b { color:#667; font-size:10px; }
+  .srcs { display:flex; gap:4px; margin-top:6px; flex-wrap:wrap; }
 </style>
 <script src="https://unpkg.com/globe.gl"></script>
 </head>
@@ -94,43 +99,52 @@
   <i class="pl ju" style="--r:42vmin"></i>
   <i class="pl sa" style="--r:48vmin"></i>
 </div>
+<button class="sig" data-ask="astarte" style="left:16%;top:16%" title="Astarte">♡</button>
+<button class="sig" data-ask="asmodeus" style="left:28%;top:10%" title="Asmodeus">🜂</button>
+<button class="sig" data-ask="amun" style="left:70%;top:11%" title="Amun-Ra">☉</button>
+<button class="sig" data-ask="anubis" style="left:82%;top:20%" title="Anubis">⚖</button>
+<button class="sig" data-ask="tut" style="left:14%;top:72%" title="Tut">☥</button>
+<button class="sig" data-ask="maat" style="left:84%;top:70%" title="Maat">🪶</button>
+<button class="sig" data-ask="hekate" style="left:22%;top:84%" title="Hekate">🗝</button>
+<button class="sig" data-ask="paimon" style="left:76%;top:86%" title="Paimon">★</button>
+<div id="pin"><button id="pinX" type="button">✕</button><h3 id="pinT"></h3><div class="meta" id="pinM"></div><div id="pinB"></div></div>
 <button class="tog" id="tL" type="button">‹</button>
 <button class="tog" id="tR" type="button">›</button>
 <aside class="side" id="left">
   <h1>WHITE WINGS</h1>
-  <p class="sub">Earth desk · 2026 · public atlas</p>
+  <p class="sub">2026 earth desk</p>
   <h2>MODE</h2>
-  <button class="mode on" data-m="natural">Natural Earth</button>
-  <button class="mode" data-m="night">Night lights</button>
-  <button class="mode" data-m="ir">Infrared</button>
-  <button class="mode" data-m="data">Information</button>
+  <div class="grid2">
+    <button class="mode on" data-m="natural">Day</button>
+    <button class="mode" data-m="night">Night</button>
+    <button class="mode" data-m="ir">IR</button>
+    <button class="mode" data-m="data">Data</button>
+  </div>
   <h2>LAYERS</h2>
-  <button class="item on" id="bCity"><span class="dot" style="background:#c9a227"></span>Cities</button>
-  <button class="item on" id="bArc"><span class="dot" style="background:#7c5cff"></span>Paths</button>
-  <button class="item on" id="bHex"><span class="dot" style="background:#3dd6c6"></span>Field</button>
-  <h2>SCALE</h2>
+  <div class="grid2">
+    <button class="item on" id="bCity">Cities</button>
+    <button class="item on" id="bArc">Paths</button>
+    <button class="item on" id="bHex">Field</button>
+  </div>
   <label class="sl">Altitude <b id="altN">2.4</b></label>
   <input id="alt" type="range" min="0.5" max="6" step="0.05" value="2.4"/>
   <label class="sl">Spin <b id="spN">0.4</b></label>
   <input id="spin" type="range" min="0" max="2" step="0.05" value="0.4"/>
-  <h2>LIVE EARTH</h2>
+  <h2>LIVE</h2>
   <div class="mrow"><span>CO₂</span><b id="mCo2">…</b></div>
   <div class="mrow"><span>Temp Δ</span><b id="mTemp">…</b></div>
-  <div class="mrow"><span>Orbit 2026</span><b id="mOrb">…</b></div>
-  <div class="mrow"><span>Quakes (wk)</span><b id="mQ">…</b></div>
+  <div class="mrow"><span>Orbit</span><b id="mOrb">…</b></div>
+  <div class="mrow"><span>Quakes</span><b id="mQ">…</b></div>
   <p id="sync">sync —</p>
-  <h2>SEATS</h2>
-  <button class="item" data-ask="astarte">Astarte</button>
-  <button class="item" data-ask="asmodeus">Asmodeus</button>
-  <button class="item" data-ask="amun">Amun-Ra</button>
-  <button class="item" data-ask="anubis">Anubis</button>
-  <button class="item" data-ask="tut">Tut</button>
-  <button class="item" data-ask="maat">Maat</button>
   <button class="item" id="bDay" type="button">TODAY</button>
-  <button class="item" data-ask="hekate">Ask Hekate</button>
-  <button class="item" data-ask="paimon">Ask Paimon</button>
-  <button class="item" data-ask="board">Board</button>
-  <svg id="spark" viewBox="0 0 220 56" width="100%" height="56" style="margin-top:8px;background:#08080c;border-radius:8px"></svg>
+  <div class="srcs">
+    <button class="src" type="button" data-open="https://en.wikipedia.org/wiki/Portal:Current_events">🌐 Wiki</button>
+    <button class="src" type="button" data-open="https://www.reddit.com/r/worldnews/">👽 Reddit</button>
+    <button class="src" type="button" data-open="https://x.com/elonmusk">𝕏 Elon</button>
+    <button class="src" type="button" data-open="https://x.com/realDonaldTrump">𝕏 Trump</button>
+    <button class="src" type="button" data-open="https://earthquake.usgs.gov/">📳 USGS</button>
+  </div>
+  <svg id="spark" viewBox="0 0 220 40" width="100%" height="40" style="margin-top:6px;background:#03080c"></svg>
 </aside>
 <aside class="side" id="right">
   <h1>2026 BOARD</h1>
@@ -261,12 +275,17 @@ function flyTo(p, title, extra){
   world.pointOfView({lat:p.lat,lng:p.lng,altitude:0.85}, 1600);
   document.getElementById('alt').value=0.85;
   document.getElementById('altN').textContent='0.85';
-  if(p && p.name){ /* visit no longer a game score */ }
-  world.htmlElementsData([{lat:p.lat,lng:p.lng,name:p.name,c:p.c,pop:p.pop,extra:extra||''}]);
+  if(p && p.name){ /* pin only */ }
   lastEvent={title:title||p.name, extra:extra||'', place:p};
+  const pin=document.getElementById('pin');
+  document.getElementById('pinT').textContent=p.name||title||'Pin';
+  document.getElementById('pinM').textContent=(p.c||'')+' · '+(p.pop||'');
+  document.getElementById('pinB').textContent=extra||title||'';
+  pin.style.display='block';
+  world.htmlElementsData([]);
   paintNews();
   pullHeat(p);
-  say((title||p.name)+' — the world turned. Ask a seat.');
+  say((title||p.name)+' — ask a star-sigil.');
 }
 world.htmlElement(d=>{
   const el=document.createElement('div');
@@ -478,6 +497,9 @@ document.getElementById('spin').oninput=e=>{
 document.getElementById('tL').onclick=()=>{ document.getElementById('left').classList.toggle('hideL'); document.body.classList.toggle('lOff'); };
 document.getElementById('tR').onclick=()=>{ document.getElementById('right').classList.toggle('hideR'); document.body.classList.toggle('rOff'); };
 document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>say(voice(b.dataset.ask)));
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>window.open(b.dataset.open,'_blank','noopener'));
+const pinEl=document.getElementById('pinX');
+if(pinEl) pinEl.onclick=()=>{ document.getElementById('pin').style.display='none'; };
 const SEATS=['astarte','asmodeus','amun','anubis','tut','maat','hekate','paimon'];
 let seatI=0;
 setInterval(()=>say(voice(SEATS[seatI++%SEATS.length])), 48000);
