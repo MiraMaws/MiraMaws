@@ -13,7 +13,7 @@
   #reel { position:fixed; left:50%; top:44%; width:min(70vmin,520px); height:min(70vmin,520px);
     transform:translate(-50%,-50%); z-index:1; object-fit:cover; border-radius:50%;
     pointer-events:none; box-shadow:0 0 60px #0af4; }
-  body.globe-ok #reel { opacity:.22; filter:blur(1px); }
+  body.globe-ok #reel { display:none !important; }
   #fallback {
     position:fixed; left:50%; top:44%; width:min(52vmin,320px); height:min(52vmin,320px);
     transform:translate(-50%,-50%); z-index:1; pointer-events:none;
@@ -81,22 +81,27 @@
   #pin h3 { color:var(--c); font-size:14px; letter-spacing:.08em; }
   #pin .meta { color:var(--d); font-size:11px; margin:3px 0 6px; }
   #mira {
-    position:fixed; right: max(270px, 18vw); bottom: 122px; z-index:8; width:148px;
+    position:fixed; right: max(16px, calc(50% - 430px)); bottom: 118px; z-index:8; width:156px;
     pointer-events:auto; text-align:center;
   }
   #mira .frame {
-    width:148px; height:168px; overflow:hidden; border:1px solid #39f6ff99;
-    box-shadow:0 0 0 1px #ff2ea644, 0 0 22px #39f6ff44, inset 0 0 20px #0008;
-    background:#041018; position:relative;
+    width:156px; height:176px; overflow:hidden; position:relative;
+    border:1px solid #39f6ffcc; background:#02060c;
+    box-shadow:0 0 0 1px #ff2ea655, 0 0 18px #39f6ff55, inset 0 0 24px #000a;
+    clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
   }
-  #mira img { width:100%; height:100%; object-fit:cover; object-position:center 18%;
-    filter:saturate(1.05) contrast(1.05); }
-  #mira.talk .frame { animation:talk 0.28s ease-in-out infinite; box-shadow:0 0 24px #39f6ffaa; }
-  #mira .tag { font-size:9px; letter-spacing:.16em; color:#39f6ff; margin-top:4px; }
+  #mira .frame::after {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(180deg, transparent 0 2px, #0018 3px);
+    mix-blend-mode:multiply;
+  }
+  #mira img { width:100%; height:100%; object-fit:cover; object-position:center 10%; display:block; }
+  #mira.talk .frame { animation:talk 0.28s ease-in-out infinite; box-shadow:0 0 28px #39f6ffcc; }
+  #mira .tag { font-size:9px; letter-spacing:.18em; color:#39f6ff; margin-top:5px; text-shadow:0 0 8px #39f6ff; }
   @keyframes talk { 50% { filter:brightness(1.12); transform:scale(1.015); } }
   @media (max-width:820px){
-    #mira { right:10px; bottom:140px; width:110px; }
-    #mira .frame { width:110px; height:124px; }
+    #mira { right:10px; bottom:140px; width:118px; }
+    #mira .frame { width:118px; height:132px; }
   }
   #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:6; width:min(640px,78vw);
     padding:8px 10px 10px; background:linear-gradient(transparent,#03060dee); }
@@ -216,8 +221,8 @@
   <div id="brief"></div>
 </div>
 <div id="mira" title="Mira — desk anchor">
-  <div class="frame"><img src="assets/mira.jpg" alt="Mira"/></div>
-  <div class="tag">MIRA · LIVE</div>
+  <div class="frame"><img src="/assets/mira.jpg" alt="Mira" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/MiraMaws/MiraMaws/main/assets/mira.jpg'"/></div>
+  <div class="tag">COMMS · MIRA</div>
 </div>
 <button class="tog" id="tL" type="button">‹</button>
 <button class="tog" id="tR" type="button">›</button>
@@ -443,7 +448,7 @@ function miraSpeak(title, body){
   pauseChatter();
   const u=new SpeechSynthesisUtterance(miraLine(title, body));
   const v=miraVoice(); if(v) u.voice=v;
-  u.rate=0.96; u.pitch=1.04; u.volume=1;
+  u.rate=0.92; u.pitch=0.96; u.volume=0.02;
   const box=document.getElementById('mira');
   u.onstart=()=>{ if(box) box.classList.add('talk'); };
   u.onend=()=>{ if(box) box.classList.remove('talk'); };
@@ -513,56 +518,102 @@ async function wikiExtract(title){
   }catch(e){ return ''; }
 }
 
-let ytFrame=null;
-function ytCmd(fn){
-  try{
-    const ifr=document.querySelector('#ytframe iframe');
-    if(!ifr||!ifr.contentWindow) return;
-    ifr.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:[]}), '*');
-  }catch(e){}
+let ytPlayer=null;
+let ytIds=[];
+let ytI=0;
+window.onYouTubeIframeAPIReady=function(){ window.__ytReady=true; };
+(function(){
+  if(document.querySelector('script[src*="iframe_api"]')) return;
+  const s=document.createElement('script');
+  s.src='https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+})();
+function waitYt(){
+  return new Promise(res=>{
+    if(window.YT && YT.Player) return res();
+    let n=0; const t=setInterval(()=>{ if((window.YT&&YT.Player)||n++>40){ clearInterval(t); res(); } },100);
+  });
 }
-async function findYtId(title){
+function ytCmd(fn){
+  try{ if(ytPlayer && typeof ytPlayer[fn]==='function') ytPlayer[fn](); }catch(e){}
+}
+function pickIds(obj, out){
+  const dump=JSON.stringify(obj);
+  const re=/"videoId"\s*:\s*"([\w-]{11})"/g;
+  let m; while((m=re.exec(dump))) out.push(m[1]);
+  (Array.isArray(obj)?obj:(obj.items||obj.videos||[])).forEach(v=>{
+    const id=v&&(v.videoId||(v.id&&v.id.videoId)||v.id);
+    if(id && /^[\w-]{11}$/.test(String(id))) out.push(String(id));
+    const u=String((v&&(v.url||v.videoUrl||v.link))||'');
+    const mm=u.match(/(?:v=|\/embed\/|youtu\.be\/)([\w-]{11})/);
+    if(mm) out.push(mm[1]);
+  });
+}
+async function findYtIds(title){
   const q=encodeURIComponent(String(title||'world news')+' news');
   const urls=[
-    'https://pipedapi.kavin.rocks/search?q='+q+'&filter=videos',
-    'https://pipedapi.adminforge.de/search?q='+q+'&filter=videos',
-    'https://pipedapi.nosebs.ru/search?q='+q+'&filter=videos'
+    'https://pipedapi.reallyaweso.me/search?q='+q+'&filter=videos',
+    'https://api.piped.private.coffee/search?q='+q+'&filter=videos',
+    'https://pipedapi.darkness.services/search?q='+q+'&filter=videos',
+    'https://invidious.jing.rocks/api/v1/search?q='+q+'&type=video',
+    'https://yt.artemislena.eu/api/v1/search?q='+q+'&type=video',
+    'https://invidious.privacyredirect.com/api/v1/search?q='+q+'&type=video',
+    'https://iv.ggtyler.dev/api/v1/search?q='+q+'&type=video',
+    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent('https://www.youtube.com/results?search_query='+q)
   ];
+  const ids=[];
   for(const u of urls){
     try{
-      const j=await fetch(u).then(r=>r.json());
-      const items=Array.isArray(j)?j:(j.items||[]);
-      const v=items.find(x=>(x.type==='video'||x.url||x.id||x.videoId));
-      if(!v) continue;
-      const id=v.videoId||v.id||(String(v.url||'').match(/v=([\w-]{11})/)||[])[1]||(String(v.url||'').split('/').pop());
-      if(id && String(id).length>=11) return String(id).replace(/^\/watch\?v=/,'').slice(0,11);
+      const r=await fetch(u);
+      const txt=await r.text();
+      try{ pickIds(JSON.parse(txt), ids); }catch(e){
+        const fromHtml=[...txt.matchAll(/(?:watch\?v=|\/embed\/|"videoId":")([\w-]{11})/g)].map(x=>x[1]);
+        ids.push(...fromHtml);
+      }
+      if(ids.length) break;
     }catch(e){}
   }
-  return null;
+  return [...new Set(ids)].filter(id=>!/^[0_]{11}$/.test(id)).slice(0,8);
+}
+function mountYt(id){
+  const box=document.getElementById('ytframe');
+  box.innerHTML='';
+  const host=document.createElement('div');
+  host.id='ytplayer';
+  host.style.cssText='width:100%;min-height:270px;height:100%';
+  box.appendChild(host);
+  if(ytPlayer && ytPlayer.destroy){ try{ ytPlayer.destroy(); }catch(e){} }
+  ytPlayer=new YT.Player('ytplayer',{
+    width:560, height:315, videoId:id,
+    playerVars:{ autoplay:1, playsinline:1, rel:0, modestbranding:1, origin:location.origin },
+    events:{
+      onReady:e=>{ try{ e.target.playVideo(); }catch(err){} },
+      onStateChange:e=>{ if(e.data===0) runBrief(); },
+      onError:()=>{ ytI++; if(ytI<ytIds.length) mountYt(ytIds[ytI]); else {
+        box.innerHTML='<p style="padding:12px;color:#9ab">This clip cannot embed. Use YouTube ↗</p>';
+      }}
+    }
+  });
 }
 async function showVideo(title){
   pauseChatter();
   const wrap=document.getElementById('ytwrap');
   const box=document.getElementById('ytframe');
   wrap.style.display='block';
-  box.textContent='Finding a video…';
-  const id=await findYtId(title);
+  box.textContent='Finding the video…';
+  await waitYt();
+  ytIds=await findYtIds(title);
+  ytI=0;
+  const id=ytIds[0];
   const search='https://www.youtube.com/results?search_query='+encodeURIComponent(title+' news');
   document.getElementById('ytlink').href=id?('https://www.youtube.com/watch?v='+id):search;
-  box.innerHTML='';
-  if(!id){
-    box.innerHTML='<p style="padding:12px;color:#9ab">No embed found. Use YouTube ↗</p>';
+  if(!id || !(window.YT&&YT.Player)){
+    box.innerHTML='<p style="padding:12px;color:#9ab">No video ID yet. Open YouTube ↗ then we can lock the watch link.</p>';
     return;
   }
-  const f=document.createElement('iframe');
-  f.src='https://www.youtube.com/embed/'+id+'?enablejsapi=1&rel=0&autoplay=1';
-  f.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-  f.allowFullscreen=true;
-  f.style.cssText='width:100%;height:100%;border:0';
-  box.appendChild(f);
-  ytFrame=f;
+  mountYt(id);
   clearTimeout(window.__briefT);
-  window.__briefT=setTimeout(runBrief, 75000);
+  window.__briefT=setTimeout(runBrief, 90000);
 }
 function boardBrief(title, body){
   const t=(title+' '+body).toLowerCase();
@@ -840,7 +891,7 @@ function pauseChatter(){ try{ if(chatter) chatter.pause(); }catch(e){} }
 function resumeChatter(){
   try{
     if(!chatter) return;
-    chatter.volume=0.3;
+    chatter.volume=0.003;
     const p=chatter.play();
     if(p&&p.catch) p.catch(()=>{});
   }catch(e){}
@@ -850,7 +901,7 @@ function armChatter(){
   document.removeEventListener('pointerdown', armChatter);
 }
 document.addEventListener('pointerdown', armChatter);
-if(chatter){ chatter.loop=true; chatter.volume=0.3; }
+if(chatter){ chatter.loop=true; chatter.volume=0.003; }
 const miraBox=document.getElementById('mira');
 if(miraBox) miraBox.onclick=()=>miraSpeak(lastEvent.title, lastEvent.extra);
 const SEATS=['astarte','asmodeus','amun','anubis','tut','maat','hekate','paimon'];
