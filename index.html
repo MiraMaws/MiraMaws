@@ -50,7 +50,11 @@
   #pL.on { transform:none; }
   #pR { right:0; top:80px; bottom:80px; width:360px; transform:translateX(100%); }
   #pR.on { transform:none; }
-  #pB { left:200px; right:200px; bottom:0; height:210px; transform:translateY(100%); }
+  #pB { left:160px; right:160px; bottom:0; height:280px; transform:translateY(100%); }
+  .board { display:flex; gap:8px; margin-top:8px; height:140px; }
+  .col { flex:1; background:#14141c; border-radius:8px; padding:6px; overflow:auto; }
+  .col h3 { font-size:10px; letter-spacing:.12em; color:var(--g); margin-bottom:4px; }
+  .card { font-size:11px; background:#0c0c12; border:1px solid #2a2430; border-radius:6px; padding:4px 6px; margin:4px 0; }
   #pB.on { transform:none; }
   button { width:100%; text-align:left; margin:5px 0; padding:10px 12px; border-radius:10px;
     border:1px solid #2a2430; background:#14141c; color:var(--ink); font:inherit; cursor:pointer; }
@@ -126,6 +130,7 @@
       <button id="go" style="width:auto">Go</button>
       <button id="rnd" style="width:auto">Random</button>
     </div>
+    <div class="board" id="board"></div>
   </aside>
 </div>
 <script>
@@ -293,6 +298,20 @@ document.getElementById('rnd').onclick=()=>{
 { const id=(s.lastLayer!=null)?s.lastLayer:865179131;
   document.getElementById('jump').value=id;
   document.getElementById('addr').textContent=resolve(id); }
+fetch('kanban.json').then(r=>r.json()).then(k=>{
+  const names={backlog:'BACKLOG',doing:'DOING',review:'REVIEW',done:'DONE'};
+  const el=document.getElementById('board');
+  el.innerHTML=(k.columns||[]).map(c=>{
+    const cards=(k.cards||[]).filter(x=>x.col===c).map(x=>'<div class="card">'+x.title+' <span style="color:#666">'+x.owner+'</span></div>').join('');
+    return '<div class="col"><h3>'+(names[c]||c)+'</h3>'+cards+'</div>';
+  }).join('');
+}).catch(()=>{});
+fetch('holo_memory.jsonl').then(r=>r.text()).then(t=>{
+  const last=t.trim().split('\n').slice(-1)[0];
+  if(last && document.getElementById('lesson')){
+    try{ const j=JSON.parse(last); /* keep */ }catch(e){}
+  }
+}).catch(()=>{});
 </script>
 </body>
 </html>
