@@ -137,7 +137,14 @@
 <button class="sig s6" data-ask="maat" style="left:84%;top:70%" title="Maat">🪶</button>
 <button class="sig s7" data-ask="hekate" style="left:22%;top:84%" title="Hekate">🗝</button>
 <button class="sig s8" data-ask="paimon" style="left:76%;top:86%" title="Paimon">★</button>
-<div id="pin"><button id="pinX" type="button">✕</button><h3 id="pinT"></h3><div class="meta" id="pinM"></div><div id="pinB"></div></div>
+<div id="pin">
+  <button id="pinX" type="button">✕</button>
+  <h3 id="pinT"></h3>
+  <div class="meta" id="pinM"></div>
+  <p id="pinB" style="line-height:1.5;max-height:7.5em;overflow:auto;white-space:pre-wrap"></p>
+  <div id="ytwrap" style="display:none;margin-top:8px;aspect-ratio:16/9;background:#000;border:1px solid #143044"></div>
+  <a id="ytlink" href="#" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:#39f6ff;font-size:12px">Open on YouTube ↗</a>
+</div>
 <button class="tog" id="tL" type="button">‹</button>
 <button class="tog" id="tR" type="button">›</button>
 <aside class="side" id="left">
@@ -201,10 +208,11 @@
 </div>
 <script>
 const TEX={
-  natural:'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+  natural:'https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57752/land_shallow_topo_2048.jpg',
   night:'https://unpkg.com/three-globe/example/img/earth-night.jpg',
   ir:'https://unpkg.com/three-globe/example/img/earth-dark.jpg',
-  data:'https://unpkg.com/three-globe/example/img/earth-dark.jpg'
+  data:'https://unpkg.com/three-globe/example/img/earth-dark.jpg',
+  stars:'https://unpkg.com/three-globe/example/img/night-sky.png'
 };
 const PLACES=[
   {name:'Cairo',c:'Egypt',lat:30.04,lng:31.24,pop:'22m'},
@@ -234,8 +242,42 @@ const PLACES=[
   {name:'São Paulo',c:'Brazil',lat:-23.55,lng:-46.63,pop:'22m'},
   {name:'Buenos Aires',c:'Argentina',lat:-34.60,lng:-58.38,pop:'15m'},
   {name:'Lima',c:'Peru',lat:-12.05,lng:-77.04,pop:'11m'},
-  {name:'Bogotá',c:'Colombia',lat:4.71,lng:-74.07,pop:'11m'}
+  {name:'Bogotá',c:'Colombia',lat:4.71,lng:-74.07,pop:'11m'},
+  {name:'Washington',c:'United States',lat:38.90,lng:-77.04,pop:'0.7m'},
+  {name:'Los Angeles',c:'United States',lat:34.05,lng:-118.24,pop:'4m'},
+  {name:'Chicago',c:'United States',lat:41.88,lng:-87.63,pop:'2.7m'},
+  {name:'Toronto',c:'Canada',lat:43.65,lng:-79.38,pop:'6m'},
+  {name:'Seoul',c:'South Korea',lat:37.57,lng:126.98,pop:'10m'},
+  {name:'Taipei',c:'Taiwan',lat:25.03,lng:121.57,pop:'2.6m'},
+  {name:'Manila',c:'Philippines',lat:14.60,lng:120.98,pop:'14m'},
+  {name:'Singapore',c:'Singapore',lat:1.35,lng:103.82,pop:'6m'},
+  {name:'Kuala Lumpur',c:'Malaysia',lat:3.14,lng:101.69,pop:'8m'},
+  {name:'Islamabad',c:'Pakistan',lat:33.68,lng:73.05,pop:'1.2m'},
+  {name:'Kabul',c:'Afghanistan',lat:34.53,lng:69.17,pop:'4m'},
+  {name:'Baghdad',c:'Iraq',lat:33.32,lng:44.37,pop:'7m'},
+  {name:'Damascus',c:'Syria',lat:33.51,lng:36.29,pop:'2m'},
+  {name:'Jerusalem',c:'Israel',lat:31.77,lng:35.21,pop:'1m'},
+  {name:'Gaza',c:'Palestine',lat:31.50,lng:34.47,pop:'0.6m'},
+  {name:'Beirut',c:'Lebanon',lat:33.89,lng:35.50,pop:'2m'},
+  {name:'Athens',c:'Greece',lat:37.98,lng:23.73,pop:'3m'},
+  {name:'Warsaw',c:'Poland',lat:52.23,lng:21.01,pop:'1.8m'},
+  {name:'Stockholm',c:'Sweden',lat:59.33,lng:18.07,pop:'1.6m'},
+  {name:'Oslo',c:'Norway',lat:59.91,lng:10.75,pop:'0.7m'},
+  {name:'Helsinki',c:'Finland',lat:60.17,lng:24.94,pop:'0.7m'},
+  {name:'Addis Ababa',c:'Ethiopia',lat:9.03,lng:38.74,pop:'5m'},
+  {name:'Accra',c:'Ghana',lat:5.56,lng:-0.20,pop:'2.5m'},
+  {name:'Kinshasa',c:'DR Congo',lat:-4.32,lng:15.31,pop:'17m'},
+  {name:'Johannesburg',c:'South Africa',lat:-26.20,lng:28.04,pop:'5.6m'},
+  {name:'Wellington',c:'New Zealand',lat:-41.29,lng:174.78,pop:'0.4m'},
+  {name:'Brussels',c:'Belgium',lat:50.85,lng:4.35,pop:'1.2m'},
+  {name:'Geneva',c:'Switzerland',lat:46.20,lng:6.14,pop:'0.2m'},
+  {name:'Vienna',c:'Austria',lat:48.21,lng:16.37,pop:'2m'}
 ];
+const ALIAS={
+  usa:'United States','u.s.':'United States','u.s.a.':'United States',america:'United States',american:'United States',
+  uk:'United Kingdom',britain:'United Kingdom',british:'United Kingdom',england:'United Kingdom',
+  gaza:'Palestine',israel:'Israel',korea:'South Korea',taiwan:'Taiwan',myanmar:'Myanmar',burma:'Myanmar'
+};
 const ARCS=[
   {startLat:30.04,startLng:31.24,endLat:48.86,endLng:2.35},{startLat:35.68,startLng:139.69,endLat:40.71,endLng:-74.01},
   {startLat:51.51,startLng:-0.13,endLat:28.61,endLng:77.21},{startLat:-33.87,startLng:151.21,endLat:-6.21,endLng:106.85},
@@ -272,7 +314,7 @@ function voice(id){
 const world=Globe()(document.getElementById('globe'))
   .globeImageUrl(TEX.natural)
   .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
-  .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+  .backgroundImageUrl(TEX.stars)
   .atmosphereColor('#9ec9ff')
   .atmosphereAltitude(0.28)
   .pointsData(PLACES)
@@ -308,9 +350,9 @@ function flyTo(p, title, extra){
   if(p && p.name){ /* pin only */ }
   lastEvent={title:title||p.name, extra:extra||'', place:p};
   const pin=document.getElementById('pin');
-  document.getElementById('pinT').textContent=p.name||title||'Pin';
-  document.getElementById('pinM').textContent=(p.c||'')+' · '+(p.pop||'');
-  document.getElementById('pinB').textContent=extra||title||'';
+  document.getElementById('pinT').textContent=title||p.name||'Pin';
+  document.getElementById('pinM').textContent=((p.name||'')+(p.c?(' · '+p.c):''))+(p.pop?(' · '+p.pop):'');
+  document.getElementById('pinB').textContent=strip(extra||title||'');
   pin.style.display='block';
   world.htmlElementsData([]);
   paintNews();
@@ -326,9 +368,64 @@ world.htmlElement(d=>{
 world.htmlLat('lat').htmlLng('lng').htmlAltitude(0.04);
 
 function matchPlace(text){
-  const t=(text||'').toLowerCase();
-  return PLACES.find(p=>t.includes(p.c.toLowerCase())||t.includes(p.name.toLowerCase())) || PLACES[Math.floor(Math.random()*PLACES.length)];
+  const t=(' '+String(text||'').toLowerCase()+' ').replace(/[^a-z0-9. ]/g,' ');
+  let best=null, score=0;
+  Object.keys(ALIAS).forEach(k=>{
+    if(t.includes(' '+k+' ') || t.includes(k)){
+      const hit=PLACES.find(p=>p.c===ALIAS[k]);
+      if(hit && k.length>score){ best=hit; score=k.length; }
+    }
+  });
+  PLACES.forEach(p=>{
+    const names=[p.name,p.c].map(x=>x.toLowerCase());
+    names.forEach(n=>{
+      if(n.length>2 && t.includes(n.toLowerCase()) && n.length>score){ best=p; score=n.length; }
+    });
+  });
+  return best;
 }
+async function locate(text){
+  const hit=matchPlace(text);
+  if(hit) return hit;
+  try{
+    const q=strip(text).split(/[,.—–-]/)[0].slice(0,80);
+    const r=await fetch('https://photon.komoot.io/api/?limit=1&q='+encodeURIComponent(q));
+    const j=await r.json();
+    const f=j.features&&j.features[0];
+    if(!f) return null;
+    const [lng,lat]=f.geometry.coordinates;
+    const props=f.properties||{};
+    return {name:props.name||props.city||q, c:props.country||props.state||'World', lat, lng, pop:''};
+  }catch(e){ return null; }
+}
+
+function ytFor(title){
+  const q=encodeURIComponent(String(title||'world news')+' news');
+  return {
+    search:'https://www.youtube.com/results?search_query='+q,
+    embed:'https://www.youtube.com/embed?listType=search&list='+q
+  };
+}
+function showVideo(title){
+  const y=ytFor(title);
+  const wrap=document.getElementById('ytwrap');
+  wrap.style.display='block';
+  wrap.innerHTML='';
+  const f=document.createElement('iframe');
+  f.src=y.embed;
+  f.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+  f.allowFullscreen=true;
+  f.style.cssText='width:100%;height:100%;border:0';
+  wrap.appendChild(f);
+  const a=document.getElementById('ytlink');
+  a.href=y.search;
+}
+
+function seenLoad(){ try{ return new Set(JSON.parse(localStorage.getItem('ww_seen')||'[]')); }catch(e){ return new Set(); } }
+const seen=seenLoad();
+function seenSave(){ try{ localStorage.setItem('ww_seen', JSON.stringify([...seen].slice(-400))); }catch(e){} }
+
+function matchPlaceOld(){}
 
 let livePins=[];
 function paintPins(){
@@ -349,7 +446,13 @@ function card(host, title, body, place, extra){
   const b=document.createElement('b'); b.textContent=title;
   const s=document.createElement('span'); s.textContent=body;
   el.appendChild(b); el.appendChild(s);
-  el.onclick=()=>flyTo(place, title, extra||body);
+  el.onclick=()=>{
+    if(place&&place.lat!=null){
+      seen.add(strip(title)); seenSave();
+      flyTo(place, title, extra||body);
+      showVideo(title);
+    } else openStory({title:strip(title).replace(/^2026 · /,''), text:extra||body, views:0});
+  };
   host.appendChild(el);
 }
 
@@ -362,10 +465,11 @@ function featPath(d){
   const day=String(d.getUTCDate()).padStart(2,'0');
   return y+'/'+m+'/'+day;
 }
-function pushStory(title, text){
+function pushStory(title, text, views){
   const t=strip(title); if(!t) return;
+  if(seen.has(t)) return;
   if(liveStories.some(s=>s.title===t)) return;
-  liveStories.push({title:t, text:strip(text).slice(0,180), year:2026});
+  liveStories.push({title:t, text:strip(text).slice(0,420), views:views||0, year:2026});
 }
 
 async function ingestFeatured(d){
@@ -384,7 +488,7 @@ async function ingestFeatured(d){
       ((feat.mostread&&feat.mostread.articles)||[]).slice(0,10).forEach(a=>{
         const name=(a.article||(a.titles&&a.titles.normalized)||'').replace(/_/g,' ');
         if(/^(Main Page|Special:|Wikipedia:|Portal:|File:)/i.test(name)) return;
-        pushStory(name, 'Trending today · '+(a.views||'')+' reads');
+        pushStory(name, 'Trending today · '+(a.views||'')+' reads', a.views||0);
       });
       if(feat.tfa){
         const tt=(feat.tfa.titles&&feat.tfa.titles.normalized)||feat.tfa.title;
@@ -399,7 +503,7 @@ async function ingestHN(){
   try{
     const ids=(await fetch('https://hacker-news.firebaseio.com/v0/topstories.json').then(r=>r.json())).slice(0,8);
     const items=await Promise.all(ids.map(id=>fetch('https://hacker-news.firebaseio.com/v0/item/'+id+'.json').then(r=>r.json())));
-    items.forEach(it=>{ if(it&&it.title) pushStory(it.title, 'Live board · '+((it.score||0)+' pts')); });
+    items.forEach(it=>{ if(it&&it.title) pushStory(it.title, it.title+'. Ranked live discussion.', it.score||0); });
   }catch(e){}
 }
 
@@ -408,7 +512,6 @@ async function loadToday(){
   const feed=document.getElementById('feed');
   const arch=document.getElementById('arch');
   feed.textContent='Loading today…';
-  liveStories=[];
   await ingestFeatured(n);
   if(!liveStories.length){
     const y=new Date(n); y.setUTCDate(y.getUTCDate()-1);
@@ -435,8 +538,9 @@ async function loadToday(){
     document.getElementById('evSub').textContent='Today · '+n.toDateString();
     return [];
   }
-  newsI=newsI%liveStories.length;
-  liveStories.forEach(s=>{
+  liveStories.sort((a,b)=>(b.views||0)-(a.views||0));
+  newsI=0;
+  liveStories.filter(s=>!seen.has(s.title)).forEach(s=>{
     const place=matchPlace(s.title+' '+s.text);
     card(feed, '2026 · '+s.title, s.text, place, s.text);
   });
@@ -445,11 +549,8 @@ async function loadToday(){
 }
 
 document.getElementById('bDay').onclick=async()=>{
-  if(!liveStories.length) await loadToday();
-  if(!liveStories.length){ say('No live story yet.'); return; }
-  const s=liveStories[newsI++%liveStories.length];
-  const place=matchPlace(s.title+' '+s.text);
-  flyTo(place, 'TODAY · '+s.title, s.text);
+  if(!liveStories.some(s=>!seen.has(s.title))) await loadToday();
+  await showStory();
 };
 
 async function syncEarth(){
@@ -577,24 +678,24 @@ function paintNews(){
   document.getElementById('popN').textContent=popStr(worldPop());
   document.getElementById('timeN').textContent=utcStr();
 }
-function showStory(i){
-  if(!liveStories.length) return;
-  newsI=i%liveStories.length;
-  const st=liveStories[newsI];
-  newsI++;
-  const place=matchPlace(st.title+' '+st.text);
-  flyTo(place, 'TODAY · '+st.title, st.text);
+async function openStory(st){
+  if(!st){ say('Caught up. New headlines arrive every minute.'); return; }
+  seen.add(st.title); seenSave();
+  const place=await locate(st.title+' '+st.text);
+  if(!place){ say('No location found for that story.'); return; }
+  flyTo(place, st.title, st.text);
+  showVideo(st.title);
 }
+function nextFresh(){ return liveStories.find(s=>!seen.has(s.title))||null; }
+function showStory(){ return openStory(nextFresh()); }
 document.getElementById('bPop').onclick=()=>say('World population (modeled UN-range clock): '+popStr(worldPop())+'. Not a census office.');
 document.getElementById('bNow').onclick=async()=>{
-  if(!liveStories.length) await loadToday();
-  if(!liveStories.length){ say('No current story.'); return; }
-  showStory(Math.max(0,newsI-1));
+  if(!liveStories.some(s=>!seen.has(s.title))) await loadToday();
+  await showStory();
 };
 document.getElementById('bNext').onclick=async()=>{
-  if(!liveStories.length) await loadToday();
-  if(!liveStories.length){ say('No upcoming story.'); return; }
-  showStory(newsI);
+  if(!liveStories.some(s=>!seen.has(s.title))) await loadToday();
+  await showStory();
 };
 setInterval(()=>{
   document.getElementById('popN').textContent=popStr(worldPop());
@@ -608,7 +709,7 @@ if(window.matchMedia && matchMedia('(max-width:820px)').matches){
   document.getElementById('right').classList.add('hideR');
 }
 loadToday().then(()=>{ paintNews(); return syncEarth(); });
-setInterval(()=>{ loadToday().then(()=>{ paintNews(); return syncEarth(); }); }, 300000);
+setInterval(()=>{ loadToday().then(()=>{ paintNews(); return syncEarth(); }); }, 60000);
 </script>
 </body>
 </html>
