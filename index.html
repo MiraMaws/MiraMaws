@@ -29,7 +29,14 @@
   button.item, .mode { display:block; width:100%; text-align:left; margin:3px 0; padding:7px 8px;
     border-radius:8px; border:1px solid var(--line); background:#0c0c14; color:var(--ink);
     font:inherit; cursor:pointer; font-size:12px; }
-  button.item.on, .mode.on { border-color:var(--p); background:#16122a; }
+  #bDay {
+    margin:10px 0 6px; padding:14px 12px; font-size:16px; font-weight:800; letter-spacing:.08em;
+    text-align:center; color:#1a1408; background:linear-gradient(180deg,#ffe56a,#c9a227 55%,#8a6a14);
+    border:1px solid #ffe56a; border-radius:12px; box-shadow:0 0 18px #c9a22788, 0 0 2px #fff8;
+    animation:flash 1.6s ease-in-out infinite;
+  }
+  #bDay:hover { filter:brightness(1.08); }
+  @keyframes flash { 50% { box-shadow:0 0 28px #ffe56acc, 0 0 6px #fff; } }
   label.sl { display:flex; justify-content:space-between; font-size:11px; color:var(--d); margin:8px 0 2px; }
   input[type=range] { width:100%; accent-color:var(--p); }
   .ev { border:1px solid var(--line); border-radius:8px; padding:8px; margin:6px 0; cursor:pointer; background:#0c0c14; }
@@ -90,17 +97,17 @@
   <div class="mrow"><span>Orbit 2026</span><b id="mOrb">…</b></div>
   <div class="mrow"><span>Quakes (wk)</span><b id="mQ">…</b></div>
   <p id="sync">sync —</p>
-  <h2>ADVISORY</h2>
+  <h2>SEATS</h2>
   <button class="item" data-ask="astarte">Astarte</button>
   <button class="item" data-ask="asmodeus">Asmodeus</button>
   <button class="item" data-ask="amun">Amun-Ra</button>
   <button class="item" data-ask="anubis">Anubis</button>
   <button class="item" data-ask="tut">Tut</button>
   <button class="item" data-ask="maat">Maat</button>
-  <button class="item" data-ask="hekate">Hekate</button>
-  <button class="item" data-ask="paimon">Paimon</button>
+  <button class="item" id="bDay" type="button">TODAY</button>
+  <button class="item" data-ask="hekate">Ask Hekate</button>
+  <button class="item" data-ask="paimon">Ask Paimon</button>
   <button class="item" data-ask="board">Board</button>
-  <button class="item" id="bDay">Today — fly to the day</button>
   <svg id="spark" viewBox="0 0 220 56" width="100%" height="56" style="margin-top:8px;background:#08080c;border-radius:8px"></svg>
 </aside>
 <aside class="side" id="right">
@@ -264,34 +271,75 @@ function card(host, title, body, place, extra){
   host.appendChild(el);
 }
 
+let liveStories=[];
+let newsI=0;
+function strip(t){ return String(t||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); }
+function featPath(d){
+  const y=d.getUTCFullYear();
+  const m=String(d.getUTCMonth()+1).padStart(2,'0');
+  const day=String(d.getUTCDate()).padStart(2,'0');
+  return y+'/'+m+'/'+day;
+}
+function pushStory(title, text){
+  const t=strip(title); if(!t) return;
+  if(liveStories.some(s=>s.title===t)) return;
+  liveStories.push({title:t, text:strip(text).slice(0,180), year:2026});
+}
+
 async function loadToday(){
   const n=new Date();
   const feed=document.getElementById('feed');
   const arch=document.getElementById('arch');
-  feed.textContent='Loading 2026…';
+  feed.textContent='Loading today…';
+  liveStories=[];
+  try{
+    const feat=await fetch('https://api.wikimedia.org/feed/v1/wikipedia/en/featured/'+featPath(n)).then(r=>r.json());
+    (feat.news||[]).forEach(story=>{
+      const link=(story.links&&story.links[0])||{};
+      const title=(link.titles&&(link.titles.normalized||link.titles.display))||link.title||'Story';
+      pushStory(title, story.story||link.extract||'');
+    });
+    ((feat.mostread&&feat.mostread.articles)||[]).slice(0,10).forEach(a=>{
+      const name=(a.article||a.titles&&a.titles.normalized||'').replace(/_/g,' ');
+      if(/^(Main Page|Special:|Wikipedia:|Portal:|File:)/i.test(name)) return;
+      pushStory(name, 'Trending today · '+(a.views||'')+' reads');
+    });
+    if(feat.tfa){
+      const tt=(feat.tfa.titles&&feat.tfa.titles.normalized)||feat.tfa.title;
+      pushStory(tt, feat.tfa.extract||'Featured today');
+    }
+  }catch(e){}
   try{
     const r=await fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${n.getUTCMonth()+1}/${n.getUTCDate()}`);
     const j=await r.json();
     const ev=j.events||[];
-    const y26=ev.filter(e=>+e.year>=2026);
-    const old=ev.filter(e=>+e.year<2026).slice(0,6);
-    const show=y26.length?y26:ev.filter(e=>+e.year>=2020).slice(0,5);
-    feed.innerHTML=''; arch.innerHTML='';
-    (show.length?show:ev.slice(0,4)).forEach(e=>{
-      const place=matchPlace(e.text);
-      card(feed, e.year+' · '+place.c, String(e.text||'').slice(0,140), place, String(e.text||'').slice(0,180));
-    });
-    old.forEach(e=>{
+    arch.innerHTML='';
+    ev.filter(e=>+e.year<2026).slice(0,6).forEach(e=>{
       const place=matchPlace(e.text);
       card(arch, e.year+' · '+place.c, String(e.text||'').slice(0,110), place, String(e.text||'').slice(0,160));
     });
-    document.getElementById('evSub').textContent='2026 board · '+n.toDateString();
-    return ev;
-  }catch(err){
-    feed.innerHTML='<div class="ev"><b>Archive blinked</b><span>Try Today again.</span></div>';
+  }catch(e){}
+  feed.innerHTML='';
+  if(!liveStories.length){
+    feed.innerHTML='<div class="ev"><b>No live pack</b><span>The public feed blinked.</span></div>';
+    document.getElementById('evSub').textContent='Today · '+n.toDateString();
     return [];
   }
+  liveStories.forEach(s=>{
+    const place=matchPlace(s.title+' '+s.text);
+    card(feed, '2026 · '+s.title, s.text, place, s.text);
+  });
+  document.getElementById('evSub').textContent='Live today · '+liveStories.length+' stories · '+n.toDateString();
+  return liveStories;
 }
+
+document.getElementById('bDay').onclick=async()=>{
+  if(!liveStories.length) await loadToday();
+  if(!liveStories.length){ say('No live story yet.'); return; }
+  const s=liveStories[newsI++%liveStories.length];
+  const place=matchPlace(s.title+' '+s.text);
+  flyTo(place, 'TODAY · '+s.title, s.text);
+};
 
 async function syncEarth(){
   document.getElementById('mOrb').textContent=orbitPct().toFixed(3)+'%';
@@ -345,14 +393,6 @@ async function syncEarth(){
     paintPins();
   }
 }
-
-document.getElementById('bDay').onclick=async()=>{
-  const ev=await loadToday();
-  if(!ev.length) return;
-  const first=ev[0];
-  const place=matchPlace(first.text);
-  flyTo(place, first.year+' · '+place.c, String(first.text||'').slice(0,180));
-};
 
 document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.mode').forEach(x=>x.classList.remove('on'));
