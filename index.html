@@ -8,7 +8,21 @@
   :root { --g:#f0c14b; --c:#39f6ff; --m:#ff2ea6; --ink:#eaf6ff; --d:#7f93a8; --bg:#03060d; --pan:#061018ee; --line:#143044; }
   * { box-sizing:border-box; margin:0; }
   html,body,#globe { height:100%; background:var(--bg); color:var(--ink); font-family:"Segoe UI",ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
-  #globe { position:fixed; inset:0; }
+  #globe { position:fixed; inset:0; width:100%; height:100%; min-height:100dvh; }
+  #fallback {
+    position:fixed; left:50%; top:44%; width:min(52vmin,320px); height:min(52vmin,320px);
+    transform:translate(-50%,-50%); z-index:1; pointer-events:none;
+    border-radius:50%;
+    background:radial-gradient(circle at 32% 26%, #b8e0ff, #3a7ab8 30%, #143868 58%, #071018);
+    box-shadow:inset -22px -16px 36px #000c, 0 0 48px #2468aa66;
+  }
+  #fallback .land { position:absolute; inset:-20%; border-radius:50%;
+    background:radial-gradient(ellipse 22% 14% at 30% 40%, #2f7a4acc, transparent 70%),
+               radial-gradient(ellipse 24% 16% at 64% 55%, #1f5a38bb, transparent 70%);
+    animation:drift 40s linear infinite; }
+  #fallback .shade { position:absolute; inset:0; border-radius:50%;
+    background:linear-gradient(118deg,#fff2,transparent 36%,#0009 80%); }
+  body.globe-ok #fallback { display:none; }
   .side { position:fixed; top:10px; bottom:108px; z-index:6; width:250px; background:var(--pan);
     border:1px solid var(--line); border-radius:4px; padding:8px 9px; overflow:hidden;
     box-shadow:0 0 0 1px #39f6ff22, 0 12px 40px #000a; }
@@ -71,6 +85,7 @@
   .pl.sa { width:14px; height:14px; background:#e6d9a8; color:#e6d9a8; animation:orb 96s linear infinite; }
   .pl.su { width:22px; height:22px; background:radial-gradient(circle at 35% 30%,#fff6a8,#f5a020); color:#f5a020;
     animation:orb 140s linear infinite; box-shadow:0 0 24px #f5a020aa; }
+  @keyframes drift { to { transform:rotate(12deg); } }
   @keyframes orb {
     from { transform:rotate(0deg) translateX(var(--r, 38vmin)) rotate(0deg); }
     to { transform:rotate(360deg) translateX(var(--r, 38vmin)) rotate(-360deg); }
@@ -117,10 +132,11 @@
     .sig.s8 { left:78% !important; top:78% !important; }
   }
 </style>
-<script src="https://unpkg.com/globe.gl"></script>
+<script src="https://cdn.jsdelivr.net/npm/globe.gl@2.41.4/dist/globe.gl.min.js"></script>
 </head>
 <body>
 <div id="globe"></div>
+<div id="fallback" aria-hidden="true"><div class="land"></div><div class="shade"></div></div>
 <div id="sol" aria-hidden="true">
   <i class="pl su" style="--r:46vmin"></i>
   <i class="pl me" style="--r:28vmin"></i>
@@ -311,41 +327,41 @@ function voice(id){
   return g[id]||g.board;
 }
 
-const world=Globe()(document.getElementById('globe'))
-  .globeImageUrl(TEX.natural)
-  .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
-  .backgroundImageUrl(TEX.stars)
-  .atmosphereColor('#9ec9ff')
-  .atmosphereAltitude(0.28)
-  .pointsData(PLACES)
-  .pointLat('lat').pointLng('lng')
-  .pointColor(d=> d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227')
-  .pointAltitude(d=> d.kind ? 0.02 : 0.01)
-  .pointRadius(d=> d.kind ? 0.32 : 0.22)
-  .pointLabel(d=>d.name+', '+d.c)
-  .onPointClick(d=>flyTo(d, d.name+' · '+d.c))
-  .arcsData(ARCS)
-  .arcColor(()=>['#7c5cff','#c9a227']).arcStroke(0.4).arcDashLength(0.4).arcDashGap(0.2).arcDashAnimateTime(4000)
-  .hexBinPointsData(HEX)
-  .hexBinPointLat('lat').hexBinPointLng('lng')
-  .hexAltitude(d=>0.02+d.points.length*0.01)
-  .hexTopColor(()=>'#3dd6c688').hexSideColor(()=>'#3dd6c622')
-  .hexBinResolution(3);
-world.controls().autoRotate=true;
-world.controls().autoRotateSpeed=0.4;
-world.pointOfView({lat:18,lng:20,altitude:2.4});
+let world=null;
 try{
-  if(typeof world.cloudsImageUrl==='function'){
-    world.cloudsImageUrl('https://unpkg.com/three-globe/example/img/earth-clouds.png');
-    if(typeof world.cloudsAltitude==='function') world.cloudsAltitude(0.012);
-  }
-}catch(e){}
+  if(typeof Globe!=='function') throw new Error('Globe missing');
+  world=Globe()(document.getElementById('globe'))
+    .globeImageUrl(TEX.natural)
+    .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+    .backgroundImageUrl(TEX.stars)
+    .atmosphereColor('#9ec9ff')
+    .atmosphereAltitude(0.25)
+    .pointsData(PLACES)
+    .pointLat('lat').pointLng('lng')
+    .pointColor(d=> d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227')
+    .pointAltitude(0.01)
+    .pointRadius(0.22)
+    .pointLabel(d=>d.name+', '+d.c)
+    .onPointClick(d=>flyTo(d, d.name+' · '+d.c));
+  world.controls().autoRotate=true;
+  world.controls().autoRotateSpeed=0.4;
+  world.pointOfView({lat:18,lng:20,altitude:2.4});
+  document.body.classList.add('globe-ok');
+  try{
+    world.arcsData(ARCS)
+      .arcColor(()=>['#39f6ff','#f0c14b']).arcStroke(0.35).arcDashLength(0.4).arcDashGap(0.2).arcDashAnimateTime(4000);
+  }catch(e){}
+}catch(err){
+  world=null;
+  const s=document.getElementById('say');
+  if(s) s.textContent='3D globe parked. CSS Earth is up.';
+}
 
 function say(t){ document.getElementById('say').textContent=t; }
 let lastEvent={title:'the quiet spinning of 2026', extra:'No pin yet. The planet is still the room.', place:null};
 function flyTo(p, title, extra){
   if(!p || p.lat==null || p.lng==null || isNaN(+p.lat) || isNaN(+p.lng)) return;
-  world.pointOfView({lat:+p.lat,lng:+p.lng,altitude:0.85}, 1600);
+  if(world) world.pointOfView({lat:+p.lat,lng:+p.lng,altitude:0.85}, 1600);
   document.getElementById('alt').value=0.85;
   document.getElementById('altN').textContent='0.85';
   lastEvent={title:title||p.name, extra:extra||'', place:p};
@@ -421,6 +437,7 @@ function matchPlaceOld(){}
 
 let livePins=[];
 function paintPins(){
+  if(!world) return;
   const cities=document.getElementById('bCity').classList.contains('on')?PLACES:[];
   world.pointsData(cities.concat(livePins));
 }
@@ -601,20 +618,23 @@ async function syncEarth(){
 document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.mode').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
+  if(!world) return;
   const m=b.dataset.m;
-  world.globeImageUrl(TEX[m]);
-  world.atmosphereColor(m==='ir'?'#ff5a2a': m==='data'?'#3dd6c6':'#7c5cff');
+  world.globeImageUrl(TEX[m]||TEX.natural);
+  world.atmosphereColor(m==='ir'?'#ff5a2a': m==='data'?'#3dd6c6':'#9ec9ff');
   world.pointColor(d=> m==='ir' ? '#ff7a3a' : (d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227'));
 });
 document.getElementById('bCity').onclick=function(){ this.classList.toggle('on'); paintPins(); };
-document.getElementById('bArc').onclick=function(){ this.classList.toggle('on'); world.arcsData(this.classList.contains('on')?ARCS:[]); };
-document.getElementById('bHex').onclick=function(){ this.classList.toggle('on'); world.hexBinPointsData(this.classList.contains('on')?HEX:[]); };
+document.getElementById('bArc').onclick=function(){ this.classList.toggle('on'); if(world) world.arcsData(this.classList.contains('on')?ARCS:[]); };
+document.getElementById('bHex').onclick=function(){ this.classList.toggle('on'); };
 document.getElementById('alt').oninput=e=>{
   const v=+e.target.value; document.getElementById('altN').textContent=v.toFixed(2);
+  if(!world) return;
   const pov=world.pointOfView(); world.pointOfView({lat:pov.lat,lng:pov.lng,altitude:v});
 };
 document.getElementById('spin').oninput=e=>{
   const v=+e.target.value; document.getElementById('spN').textContent=v.toFixed(2);
+  if(!world) return;
   world.controls().autoRotate=v>0; world.controls().autoRotateSpeed=v;
 };
 document.getElementById('tL').onclick=()=>{ document.getElementById('left').classList.toggle('hideL'); document.body.classList.toggle('lOff'); };
