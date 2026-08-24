@@ -918,7 +918,14 @@ function armChatter(){
 document.addEventListener('pointerdown', armChatter);
 if(chatter){ chatter.loop=true; chatter.volume=0.003; }
 const miraBox=document.getElementById('mira');
-if(miraBox) miraBox.onclick=()=>{ if(!videoOn) miraSpeak(lastEvent.title, lastEvent.extra); };
+if(miraBox) miraBox.onclick=()=>{
+  if(videoOn) return;
+  if(window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)){
+    hushDesk();
+    return;
+  }
+  miraSpeak(lastEvent.title, lastEvent.extra);
+};
 const SEATS=['astarte','asmodeus','amun','anubis','tut','maat','hekate','paimon'];
 let seatI=0;
 setInterval(()=>say(voice(SEATS[seatI++%SEATS.length])), 48000);
