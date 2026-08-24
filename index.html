@@ -424,33 +424,43 @@ try{
 }
 
 function say(t){ document.getElementById('say').textContent=t; }
+let videoOn=false;
+function hushDesk(){
+  try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
+  const box=document.getElementById('mira');
+  if(box) box.classList.remove('talk');
+  pauseChatter();
+}
 function miraVoice(){
   const vs=window.speechSynthesis?speechSynthesis.getVoices():[];
-  const pick=vs.find(v=>/en-US|en_US|English/.test(v.lang)&&/female|samantha|zira|google us/i.test(v.name))
-    || vs.find(v=>/en-US/.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang));
-  return pick||null;
+  return vs.find(v=>/en-GB|United Kingdom|UK English|Kate|Serena|Google UK/i.test(v.name+' '+v.lang))
+    || vs.find(v=>/en-GB/.test(v.lang))
+    || vs.find(v=>/female|samantha|zira/i.test(v.name))
+    || vs.find(v=>/^en/i.test(v.lang))
+    || null;
 }
 function miraLine(title, body){
   const t=(title||'').replace(/^2026 · /,'');
   const hooks=[
-    'This just in — and no, I will not soften it.',
-    'Hold the desk. Mira here.',
-    'You wanted current. Here is current.',
-    'Do not look away from this one.'
+    'Good evening. One has the desk.',
+    'Do be still a moment. This has just come in.',
+    'Rather a sharp item, I am afraid.',
+    'Listen closely, darling. We shall not dress this up.'
   ];
   const hook=hooks[Math.floor(Math.random()*hooks.length)];
-  const bit=String(body||'').replace(/\s+/g,' ').slice(0,220);
-  return hook+' '+t+'. '+bit+' That is the street. Now the seats can argue.';
+  const bit=String(body||'').replace(/\s+/g,' ').slice(0,180);
+  return hook+' '+t+'. '+bit+' That is the street. The seats may argue, if they must.';
 }
 function miraSpeak(title, body){
+  if(videoOn) return;
   if(!window.speechSynthesis) return;
-  try{ speechSynthesis.cancel(); }catch(e){}
-  pauseChatter();
+  hushDesk();
   const u=new SpeechSynthesisUtterance(miraLine(title, body));
   const v=miraVoice(); if(v) u.voice=v;
-  u.rate=0.92; u.pitch=0.96; u.volume=0.02;
+  u.lang=(v&&v.lang)||'en-GB';
+  u.rate=0.86; u.pitch=0.9; u.volume=0.45;
   const box=document.getElementById('mira');
-  u.onstart=()=>{ if(box) box.classList.add('talk'); };
+  u.onstart=()=>{ if(videoOn){ try{ speechSynthesis.cancel(); }catch(e){} return; } if(box) box.classList.add('talk'); };
   u.onend=()=>{ if(box) box.classList.remove('talk'); };
   u.onerror=()=>{ if(box) box.classList.remove('talk'); };
   speechSynthesis.speak(u);
@@ -473,8 +483,7 @@ function flyTo(p, title, extra){
   if(br){ br.style.display='none'; br.textContent=''; }
   paintNews();
   pullHeat(p);
-  say((title||p.name)+' — Mira has the desk.');
-  miraSpeak(title||p.name, extra||'');
+  say((title||p.name)+' — desk locked.');
 }
 
 function matchPlace(text){
@@ -587,8 +596,11 @@ function mountYt(id){
     width:560, height:315, videoId:id,
     playerVars:{ autoplay:1, playsinline:1, rel:0, modestbranding:1, origin:location.origin },
     events:{
-      onReady:e=>{ try{ e.target.playVideo(); }catch(err){} },
-      onStateChange:e=>{ if(e.data===0) runBrief(); },
+      onReady:e=>{ videoOn=true; hushDesk(); try{ e.target.playVideo(); }catch(err){} },
+      onStateChange:e=>{
+        if(e.data===1){ videoOn=true; hushDesk(); }
+        if(e.data===0){ videoOn=false; runBrief(); }
+      },
       onError:()=>{ ytI++; if(ytI<ytIds.length) mountYt(ytIds[ytI]); else {
         box.innerHTML='<p style="padding:12px;color:#9ab">This clip cannot embed. Use YouTube ↗</p>';
       }}
@@ -596,7 +608,8 @@ function mountYt(id){
   });
 }
 async function showVideo(title){
-  pauseChatter();
+  videoOn=true;
+  hushDesk();
   const wrap=document.getElementById('ytwrap');
   const box=document.getElementById('ytframe');
   wrap.style.display='block';
@@ -862,13 +875,15 @@ document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>say(voice(b.dat
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>window.open(b.dataset.open,'_blank','noopener'));
 const pinEl=document.getElementById('pinX');
 if(pinEl) pinEl.onclick=()=>{
+  videoOn=false;
+  hushDesk();
   const pin=document.getElementById('pin');
   pin.classList.remove('on','big');
   const box=document.getElementById('ytframe');
   if(box) box.innerHTML='';
+  if(ytPlayer && ytPlayer.destroy){ try{ ytPlayer.destroy(); }catch(e){} ytPlayer=null; }
   document.getElementById('ytwrap').style.display='none';
   setTimeout(()=>{ pin.style.display='none'; }, 400);
-  resumeChatter();
 };
 const ytp=document.getElementById('ytPause');
 const yto=document.getElementById('ytPlay');
@@ -903,7 +918,7 @@ function armChatter(){
 document.addEventListener('pointerdown', armChatter);
 if(chatter){ chatter.loop=true; chatter.volume=0.003; }
 const miraBox=document.getElementById('mira');
-if(miraBox) miraBox.onclick=()=>miraSpeak(lastEvent.title, lastEvent.extra);
+if(miraBox) miraBox.onclick=()=>{ if(!videoOn) miraSpeak(lastEvent.title, lastEvent.extra); };
 const SEATS=['astarte','asmodeus','amun','anubis','tut','maat','hekate','paimon'];
 let seatI=0;
 setInterval(()=>say(voice(SEATS[seatI++%SEATS.length])), 48000);
