@@ -1,0 +1,14 @@
+{
+  "repo": "MiraMaws/MiraMaws",
+  "branch": "main",
+  "site": "https://miramaws.com/",
+  "api": "https://api.github.com",
+  "files": {
+    "index.html": "08_PANTHEON/control_panel.html",
+    "earth_lessons.json": "08_PANTHEON/earth_lessons.json",
+    "treasury.json": "08_PANTHEON/treasury.json",
+    "skills_catalog.json": "08_PANTHEON/skills_catalog.json",
+    "kanban.json": "08_PANTHEON/kanban.json",
+    "publish_config.json": "08_PANTHEON/publish_config.json"
+  }
+}
