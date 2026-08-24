@@ -100,7 +100,13 @@
   #pin .ytctl button, #pin .ytctl a, #advisors button {
     font-size:calc(10px * var(--ps)); padding:calc(5px * var(--ps)) calc(6px * var(--ps)); }
   #pin h3 { font-size:calc(14px * var(--ps)); }
-  .pinDrag { cursor:move; }
+  #pinMove {
+    cursor:grab; user-select:none; height:calc(18px * var(--ps,1));
+    margin:-2px 18px 6px 0; padding:2px 0;
+    letter-spacing:.2em; font-size:calc(9px * var(--ps,1)); color:#7dffb0;
+    text-align:center; border-bottom:1px solid #2dff7a44;
+  }
+  #pinMove:active { cursor:grabbing; }
   #pin.theatre { max-width:none; max-height:none; }
   #ytwrap { flex:1; min-height:160px; display:flex; flex-direction:column; }
   #ytframe { flex:1; min-height:160px; }
@@ -319,6 +325,7 @@
   <span class="rz se" data-dir="se"></span>
   <span class="rz sw" data-dir="sw"></span>
   <button id="pinX" type="button">✕</button>
+  <div id="pinMove" class="pinDrag">⋮⋮ DRAG</div>
   <div class="pinBody">
   <div class="pinMain">
   <h3 id="pinT" class="pinDrag"></h3>
@@ -1412,22 +1419,34 @@ const ytTh=document.getElementById('ytTheatre');
 if(ytTh) ytTh.onclick=theatreMode;
 (function bindPinDrag(){
   const pin=document.getElementById('pin'); if(!pin) return;
-  pin.querySelectorAll('.pinDrag').forEach(el=>{
-    el.onpointerdown=e=>{
-      if(e.button) return;
-      e.preventDefault();
-      const r=pin.getBoundingClientRect();
-      const sx=e.clientX, sy=e.clientY, sl=r.left, st=r.top;
-      function move(ev){
-        pin.style.left=(sl+ev.clientX-sx)+'px';
-        pin.style.top=(st+ev.clientY-sy)+'px';
-        pin.style.right='auto'; pin.style.bottom='auto';
-      }
-      function up(){ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); }
-      window.addEventListener('pointermove',move);
-      window.addEventListener('pointerup',up);
-    };
-  });
+  function startDrag(e){
+    if(e.button) return;
+    const t=e.target;
+    if(!t) return;
+    if(t.closest && (t.closest('.rz')||t.closest('button')||t.closest('input')||t.closest('select')||t.closest('a')||t.closest('iframe')||t.closest('#ytframe')||t.id==='pinX')) return;
+    e.preventDefault();
+    pin.classList.remove('theatre');
+    const r=pin.getBoundingClientRect();
+    const sx=e.clientX, sy=e.clientY, sl=r.left, st=r.top;
+    try{ pin.setPointerCapture(e.pointerId); }catch(err){}
+    function move(ev){
+      pin.style.left=(sl+ev.clientX-sx)+'px';
+      pin.style.top=(st+ev.clientY-sy)+'px';
+      pin.style.right='auto'; pin.style.bottom='auto';
+    }
+    function up(ev){
+      try{ pin.releasePointerCapture(e.pointerId); }catch(err){}
+      pin.removeEventListener('pointermove', move);
+      pin.removeEventListener('pointerup', up);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    }
+    pin.addEventListener('pointermove', move);
+    pin.addEventListener('pointerup', up);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+  pin.addEventListener('pointerdown', startDrag);
 })();
 const ytVol=document.getElementById('ytVol');
 if(ytVol) ytVol.oninput=()=>{ try{ if(ytPlayer&&ytPlayer.setVolume) ytPlayer.setVolume(+ytVol.value); }catch(e){} };
