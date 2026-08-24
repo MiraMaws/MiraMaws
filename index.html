@@ -60,6 +60,20 @@
   .buy small { display:block; color:var(--d); }
   #say { text-align:center; font-size:12px; color:#c8bdd4; min-height:1.6em; margin:5px 0; }
   .dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; }
+  .heat { color:#ff8a4a; }
+  #sol { position:fixed; inset:0; z-index:1; pointer-events:none; }
+  .pl { position:absolute; left:50%; top:46%; border-radius:50%; margin:0; box-shadow:0 0 8px currentColor; }
+  .pl.me { width:6px; height:6px; background:#9aa; color:#9aa; animation:orb 18s linear infinite; }
+  .pl.ve { width:8px; height:8px; background:#e8c090; color:#e8c090; animation:orb 28s linear infinite reverse; }
+  .pl.ma { width:7px; height:7px; background:#c44; color:#c44; animation:orb 44s linear infinite; }
+  .pl.ju { width:16px; height:16px; background:#d4b07a; color:#d4b07a; animation:orb 72s linear infinite reverse; }
+  .pl.sa { width:14px; height:14px; background:#e6d9a8; color:#e6d9a8; animation:orb 96s linear infinite; }
+  .pl.su { width:22px; height:22px; background:radial-gradient(circle at 35% 30%,#fff6a8,#f5a020); color:#f5a020;
+    animation:orb 140s linear infinite; box-shadow:0 0 24px #f5a020aa; }
+  @keyframes orb {
+    from { transform:rotate(0deg) translateX(var(--r, 38vmin)) rotate(0deg); }
+    to { transform:rotate(360deg) translateX(var(--r, 38vmin)) rotate(-360deg); }
+  }
   .mrow { display:flex; justify-content:space-between; gap:8px; font-size:11px; padding:4px 0; border-bottom:1px solid #1a1a24; }
   .mrow b { color:var(--g); font-variant-numeric:tabular-nums; }
   #sync { font-size:10px; color:#6a9a78; margin-top:6px; }
@@ -72,6 +86,14 @@
 </head>
 <body>
 <div id="globe"></div>
+<div id="sol" aria-hidden="true">
+  <i class="pl su" style="--r:46vmin"></i>
+  <i class="pl me" style="--r:28vmin"></i>
+  <i class="pl ve" style="--r:32vmin"></i>
+  <i class="pl ma" style="--r:36vmin"></i>
+  <i class="pl ju" style="--r:42vmin"></i>
+  <i class="pl sa" style="--r:48vmin"></i>
+</div>
 <button class="tog" id="tL" type="button">‹</button>
 <button class="tog" id="tR" type="button">›</button>
 <aside class="side" id="left">
@@ -121,6 +143,8 @@
 <div id="bar">
   <div class="row">
     <div class="stat"><span>WORLD POP</span><b id="popN">—</b></div>
+    <div class="stat"><span>UTC</span><b id="timeN">—</b></div>
+    <div class="stat"><span>HEAT</span><b id="heatN" class="heat">—</b></div>
     <div class="stat"><span>NOW</span><b id="nowN">—</b></div>
     <div class="stat"><span>NEXT</span><b id="nextN">—</b></div>
   </div>
@@ -205,8 +229,8 @@ const world=Globe()(document.getElementById('globe'))
   .globeImageUrl(TEX.natural)
   .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
   .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
-  .atmosphereColor('#7c5cff')
-  .atmosphereAltitude(0.2)
+  .atmosphereColor('#9ec9ff')
+  .atmosphereAltitude(0.28)
   .pointsData(PLACES)
   .pointLat('lat').pointLng('lng')
   .pointColor(d=> d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227')
@@ -224,6 +248,12 @@ const world=Globe()(document.getElementById('globe'))
 world.controls().autoRotate=true;
 world.controls().autoRotateSpeed=0.4;
 world.pointOfView({lat:18,lng:20,altitude:2.4});
+try{
+  if(typeof world.cloudsImageUrl==='function'){
+    world.cloudsImageUrl('https://unpkg.com/three-globe/example/img/earth-clouds.png');
+    if(typeof world.cloudsAltitude==='function') world.cloudsAltitude(0.012);
+  }
+}catch(e){}
 
 function say(t){ document.getElementById('say').textContent=t; }
 let lastEvent={title:'the quiet spinning of 2026', extra:'No pin yet. The planet is still the room.', place:null};
@@ -235,6 +265,7 @@ function flyTo(p, title, extra){
   world.htmlElementsData([{lat:p.lat,lng:p.lng,name:p.name,c:p.c,pop:p.pop,extra:extra||''}]);
   lastEvent={title:title||p.name, extra:extra||'', place:p};
   paintNews();
+  pullHeat(p);
   say((title||p.name)+' — the world turned. Ask a seat.');
 }
 world.htmlElement(d=>{
@@ -266,7 +297,9 @@ function orbitPct(){
 function card(host, title, body, place, extra){
   const el=document.createElement('div');
   el.className='ev';
-  el.innerHTML='<b>'+title+'</b><span>'+body+'</span>';
+  const b=document.createElement('b'); b.textContent=title;
+  const s=document.createElement('span'); s.textContent=body;
+  el.appendChild(b); el.appendChild(s);
   el.onclick=()=>flyTo(place, title, extra||body);
   host.appendChild(el);
 }
@@ -286,29 +319,53 @@ function pushStory(title, text){
   liveStories.push({title:t, text:strip(text).slice(0,180), year:2026});
 }
 
+async function ingestFeatured(d){
+  const urls=[
+    'https://api.wikimedia.org/feed/v1/wikipedia/en/featured/'+featPath(d),
+    'https://en.wikipedia.org/api/rest_v1/feed/featured/'+featPath(d)
+  ];
+  for(const u of urls){
+    try{
+      const feat=await fetch(u).then(r=>{ if(!r.ok) throw 0; return r.json(); });
+      (feat.news||[]).forEach(story=>{
+        const link=(story.links&&story.links[0])||{};
+        const title=(link.titles&&(link.titles.normalized||link.titles.display))||link.title||'Story';
+        pushStory(title, story.story||link.extract||'');
+      });
+      ((feat.mostread&&feat.mostread.articles)||[]).slice(0,10).forEach(a=>{
+        const name=(a.article||(a.titles&&a.titles.normalized)||'').replace(/_/g,' ');
+        if(/^(Main Page|Special:|Wikipedia:|Portal:|File:)/i.test(name)) return;
+        pushStory(name, 'Trending today · '+(a.views||'')+' reads');
+      });
+      if(feat.tfa){
+        const tt=(feat.tfa.titles&&feat.tfa.titles.normalized)||feat.tfa.title;
+        pushStory(tt, feat.tfa.extract||'Featured today');
+      }
+      if(liveStories.length) return;
+    }catch(e){}
+  }
+}
+
+async function ingestHN(){
+  try{
+    const ids=(await fetch('https://hacker-news.firebaseio.com/v0/topstories.json').then(r=>r.json())).slice(0,8);
+    const items=await Promise.all(ids.map(id=>fetch('https://hacker-news.firebaseio.com/v0/item/'+id+'.json').then(r=>r.json())));
+    items.forEach(it=>{ if(it&&it.title) pushStory(it.title, 'Live board · '+((it.score||0)+' pts')); });
+  }catch(e){}
+}
+
 async function loadToday(){
   const n=new Date();
   const feed=document.getElementById('feed');
   const arch=document.getElementById('arch');
   feed.textContent='Loading today…';
   liveStories=[];
-  try{
-    const feat=await fetch('https://api.wikimedia.org/feed/v1/wikipedia/en/featured/'+featPath(n)).then(r=>r.json());
-    (feat.news||[]).forEach(story=>{
-      const link=(story.links&&story.links[0])||{};
-      const title=(link.titles&&(link.titles.normalized||link.titles.display))||link.title||'Story';
-      pushStory(title, story.story||link.extract||'');
-    });
-    ((feat.mostread&&feat.mostread.articles)||[]).slice(0,10).forEach(a=>{
-      const name=(a.article||a.titles&&a.titles.normalized||'').replace(/_/g,' ');
-      if(/^(Main Page|Special:|Wikipedia:|Portal:|File:)/i.test(name)) return;
-      pushStory(name, 'Trending today · '+(a.views||'')+' reads');
-    });
-    if(feat.tfa){
-      const tt=(feat.tfa.titles&&feat.tfa.titles.normalized)||feat.tfa.title;
-      pushStory(tt, feat.tfa.extract||'Featured today');
-    }
-  }catch(e){}
+  await ingestFeatured(n);
+  if(!liveStories.length){
+    const y=new Date(n); y.setUTCDate(y.getUTCDate()-1);
+    await ingestFeatured(y);
+  }
+  await ingestHN();
   try{
     const r=await fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${n.getUTCMonth()+1}/${n.getUTCDate()}`);
     const j=await r.json();
@@ -321,10 +378,15 @@ async function loadToday(){
   }catch(e){}
   feed.innerHTML='';
   if(!liveStories.length){
-    feed.innerHTML='<div class="ev"><b>No live pack</b><span>The public feed blinked.</span></div>';
+    feed.textContent='';
+    const empty=document.createElement('div'); empty.className='ev';
+    empty.appendChild(Object.assign(document.createElement('b'),{textContent:'No live pack'}));
+    empty.appendChild(Object.assign(document.createElement('span'),{textContent:'Public feeds blinked. Try TODAY again.'}));
+    feed.appendChild(empty);
     document.getElementById('evSub').textContent='Today · '+n.toDateString();
     return [];
   }
+  newsI=newsI%liveStories.length;
   liveStories.forEach(s=>{
     const place=matchPlace(s.title+' '+s.text);
     card(feed, '2026 · '+s.title, s.text, place, s.text);
@@ -441,13 +503,27 @@ drawSpark();
 const POP0=8231000000, T0=Date.UTC(2026,0,1), PPS=2.15;
 function worldPop(){ return Math.floor(POP0+Math.max(0,(Date.now()-T0)/1000)*PPS); }
 function popStr(n){ return n.toLocaleString('en-US'); }
+function utcStr(){
+  const d=new Date();
+  return d.toISOString().slice(11,19)+' UTC';
+}
+async function pullHeat(p){
+  const lat=(p&&p.lat!=null)?p.lat:30.04, lng=(p&&p.lng!=null)?p.lng:31.24;
+  try{
+    const j=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lng+'&current=temperature_2m').then(r=>r.json());
+    const t=j.current&&j.current.temperature_2m;
+    if(t==null) return;
+    document.getElementById('heatN').textContent=t+'°';
+  }catch(e){}
+}
 function paintNews(){
   const now=liveStories.length?liveStories[(Math.max(0,newsI-1))%liveStories.length]:null;
   const nxt=liveStories.length?liveStories[newsI%liveStories.length]:null;
-  const cut=t=>String(t||'—').slice(0,28);
+  const cut=t=>String(t||'—').slice(0,22);
   document.getElementById('nowN').textContent=cut(now&&now.title||lastEvent.title);
   document.getElementById('nextN').textContent=cut(nxt&&nxt.title);
   document.getElementById('popN').textContent=popStr(worldPop());
+  document.getElementById('timeN').textContent=utcStr();
 }
 function showStory(i){
   if(!liveStories.length) return;
@@ -468,8 +544,12 @@ document.getElementById('bNext').onclick=async()=>{
   if(!liveStories.length){ say('No upcoming story.'); return; }
   showStory(newsI);
 };
-setInterval(()=>{ document.getElementById('popN').textContent=popStr(worldPop()); },1000);
+setInterval(()=>{
+  document.getElementById('popN').textContent=popStr(worldPop());
+  document.getElementById('timeN').textContent=utcStr();
+},1000);
 paintNews();
+pullHeat(null);
 loadToday().then(()=>{ paintNews(); return syncEarth(); });
 setInterval(()=>{ loadToday().then(()=>{ paintNews(); return syncEarth(); }); }, 300000);
 </script>
