@@ -80,7 +80,24 @@
   }
   #pin h3 { color:var(--c); font-size:14px; letter-spacing:.08em; }
   #pin .meta { color:var(--d); font-size:11px; margin:3px 0 6px; }
-  #pinX { position:absolute; top:6px; right:8px; border:0; background:none; color:var(--m); cursor:pointer; font-size:16px; }
+  #mira {
+    position:fixed; right: max(270px, 18vw); bottom: 122px; z-index:8; width:148px;
+    pointer-events:auto; text-align:center;
+  }
+  #mira .frame {
+    width:148px; height:168px; overflow:hidden; border:1px solid #39f6ff99;
+    box-shadow:0 0 0 1px #ff2ea644, 0 0 22px #39f6ff44, inset 0 0 20px #0008;
+    background:#041018; position:relative;
+  }
+  #mira img { width:100%; height:100%; object-fit:cover; object-position:center 18%;
+    filter:saturate(1.05) contrast(1.05); }
+  #mira.talk .frame { animation:talk 0.28s ease-in-out infinite; box-shadow:0 0 24px #39f6ffaa; }
+  #mira .tag { font-size:9px; letter-spacing:.16em; color:#39f6ff; margin-top:4px; }
+  @keyframes talk { 50% { filter:brightness(1.12); transform:scale(1.015); } }
+  @media (max-width:820px){
+    #mira { right:10px; bottom:140px; width:110px; }
+    #mira .frame { width:110px; height:124px; }
+  }
   #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:6; width:min(640px,78vw);
     padding:8px 10px 10px; background:linear-gradient(transparent,#03060dee); }
   .row { display:flex; gap:5px; }
@@ -197,6 +214,10 @@
     </div>
   </div>
   <div id="brief"></div>
+</div>
+<div id="mira" title="Mira — desk anchor">
+  <div class="frame"><img src="assets/mira.jpg" alt="Mira"/></div>
+  <div class="tag">MIRA · LIVE</div>
 </div>
 <button class="tog" id="tL" type="button">‹</button>
 <button class="tog" id="tR" type="button">›</button>
@@ -398,6 +419,38 @@ try{
 }
 
 function say(t){ document.getElementById('say').textContent=t; }
+function miraVoice(){
+  const vs=window.speechSynthesis?speechSynthesis.getVoices():[];
+  const pick=vs.find(v=>/en-US|en_US|English/.test(v.lang)&&/female|samantha|zira|google us/i.test(v.name))
+    || vs.find(v=>/en-US/.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang));
+  return pick||null;
+}
+function miraLine(title, body){
+  const t=(title||'').replace(/^2026 · /,'');
+  const hooks=[
+    'This just in — and no, I will not soften it.',
+    'Hold the desk. Mira here.',
+    'You wanted current. Here is current.',
+    'Do not look away from this one.'
+  ];
+  const hook=hooks[Math.floor(Math.random()*hooks.length)];
+  const bit=String(body||'').replace(/\s+/g,' ').slice(0,220);
+  return hook+' '+t+'. '+bit+' That is the street. Now the seats can argue.';
+}
+function miraSpeak(title, body){
+  if(!window.speechSynthesis) return;
+  try{ speechSynthesis.cancel(); }catch(e){}
+  pauseChatter();
+  const u=new SpeechSynthesisUtterance(miraLine(title, body));
+  const v=miraVoice(); if(v) u.voice=v;
+  u.rate=0.96; u.pitch=1.04; u.volume=1;
+  const box=document.getElementById('mira');
+  u.onstart=()=>{ if(box) box.classList.add('talk'); };
+  u.onend=()=>{ if(box) box.classList.remove('talk'); };
+  u.onerror=()=>{ if(box) box.classList.remove('talk'); };
+  speechSynthesis.speak(u);
+}
+if(window.speechSynthesis) speechSynthesis.addEventListener('voiceschanged', ()=>{});
 let lastEvent={title:'the quiet spinning of 2026', extra:'No pin yet. The planet is still the room.', place:null};
 function flyTo(p, title, extra){
   if(!p || p.lat==null || p.lng==null || isNaN(+p.lat) || isNaN(+p.lng)) return;
@@ -415,7 +468,8 @@ function flyTo(p, title, extra){
   if(br){ br.style.display='none'; br.textContent=''; }
   paintNews();
   pullHeat(p);
-  say((title||p.name)+' — ask a star-sigil.');
+  say((title||p.name)+' — Mira has the desk.');
+  miraSpeak(title||p.name, extra||'');
 }
 
 function matchPlace(text){
@@ -797,6 +851,8 @@ function armChatter(){
 }
 document.addEventListener('pointerdown', armChatter);
 if(chatter){ chatter.loop=true; chatter.volume=0.3; }
+const miraBox=document.getElementById('mira');
+if(miraBox) miraBox.onclick=()=>miraSpeak(lastEvent.title, lastEvent.extra);
 const SEATS=['astarte','asmodeus','amun','anubis','tut','maat','hekate','paimon'];
 let seatI=0;
 setInterval(()=>say(voice(SEATS[seatI++%SEATS.length])), 48000);
