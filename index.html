@@ -133,6 +133,24 @@
   #advisors button { flex:1 1 22%; min-width:64px; padding:5px 4px; font-size:9px; letter-spacing:.06em;
     border:1px solid #c44dff66; background:#16061e; color:#e8d0ff; cursor:pointer; }
   #advisors button:hover { border-color:#ff7ad9; }
+  #shop {
+    position:fixed; top:12px; right:12px; bottom:128px; z-index:7;
+    width:min(42vw,420px); display:none; padding:12px; overflow:auto;
+  }
+  body.shopOn #shop { display:block; }
+  body.shopOn #right { display:none; }
+  .mark { display:block; width:72px; height:48px; margin:0 auto 6px; }
+  #shop h1 { text-align:center; letter-spacing:.2em; font-size:14px; }
+  .sku { margin:10px 0; padding:8px; border:1px solid var(--line); background:#10041a; }
+  .sku img { width:100%; height:110px; object-fit:cover; border:1px solid #c44dff55; }
+  .sku b { display:block; margin:6px 0 2px; color:#ff9adf; font-size:12px; }
+  .sku p { font-size:11px; color:var(--d); line-height:1.4; }
+  .sku .ch { font-size:10px; color:#e8d0ff; margin:6px 0; }
+  .sku a.order {
+    display:block; text-align:center; margin-top:8px; padding:8px;
+    background:linear-gradient(90deg,#7a00ff,#ff2ea6); color:#fff; text-decoration:none;
+    letter-spacing:.14em; font-size:11px; font-weight:800;
+  }
   #bNow {
     flex:2.2 !important; padding:12px 8px !important; font-size:13px !important; font-weight:800;
     color:#fff !important; letter-spacing:.14em;
@@ -376,7 +394,7 @@
 <button class="tog" id="tL" type="button">‹</button>
 <button class="tog" id="tR" type="button">›</button>
 <aside class="side hud" id="left">
-  <h1>WHITE WINGS</h1>
+  <h1><img class="mark" src="/assets/ww-mark.svg" alt="White Wings"/>WHITE WINGS</h1>
   <p class="sub">2026 earth desk</p>
   <h2>MODE</h2>
   <div class="grid2">
@@ -431,6 +449,32 @@
   <div id="mkStrip"></div>
 </div>
 <div id="locTab" aria-live="polite"></div>
+<div id="shop" class="hud">
+  <img class="mark" src="/assets/ww-mark.svg" alt="White Wings mark"/>
+  <h1>SHOP</h1>
+  <p class="sub" style="text-align:center">Pay on Etsy · Printify ships</p>
+  <article class="sku">
+    <img src="/assets/desk-mat.svg" alt="Earth Desk Mat"/>
+    <b>Earth Desk Mat · $39</b>
+    <p>XL ops-HUD mat. People already live on a desk pad — this one is the 2026 Earth desk.</p>
+    <div class="ch">1 daily driver · 2 only our HUD · 3 Printify ships</div>
+    <a class="order" href="https://www.etsy.com/shop/MiraMaws" target="_blank" rel="noopener">ORDER ON ETSY</a>
+  </article>
+  <article class="sku">
+    <img src="/assets/ww-mark.svg" alt="Twin-arch pin" style="height:80px;object-fit:contain;background:#070312"/>
+    <b>Twin-arch pin · $12</b>
+    <p>Mirrored catenary lapel pin. Pin market is hot; this mark is original geometry.</p>
+    <div class="ch">1 small-gift · 2 original arch · 3 ships light</div>
+    <a class="order" href="https://www.etsy.com/shop/MiraMaws" target="_blank" rel="noopener">ORDER ON ETSY</a>
+  </article>
+  <article class="sku">
+    <img src="/assets/mira.jpg" alt="Sticker sheet"/>
+    <b>HUD sticker sheet · $8</b>
+    <p>Stickers are a top Etsy keyword. Cheap to iterate weekly.</p>
+    <div class="ch">1 top keyword · 2 cheap ship · 3 same desk language</div>
+    <a class="order" href="https://www.etsy.com/shop/MiraMaws" target="_blank" rel="noopener">ORDER ON ETSY</a>
+  </article>
+</div>
 <div id="bar" class="hud">
   <div id="mira" title="Mira — desk anchor">
     <div class="frame">
@@ -448,6 +492,7 @@
   <p id="say">CURRENT NEWS is the main desk. Advisors speak when asked.</p>
   <div class="buys">
     <button class="buy" id="bNow" type="button"><b>CURRENT NEWS</b><small>main desk</small></button>
+    <button class="buy" id="bShop" type="button"><b>SHOP</b><small>desk goods</small></button>
     <button class="buy" id="bShort" type="button"><b>SHORTS</b><small>2–15s memes</small></button>
     <button class="buy" id="bMid" type="button"><b>MEDIUM</b><small>1–5 min dumps</small></button>
     <button class="buy" id="bLong" type="button"><b>LONG</b><small>30–60 min</small></button>
@@ -1579,6 +1624,11 @@ async function playStory(){
 }
 let playI=0;
 document.getElementById('bNow').onclick=()=>playStory();
+const bShop=document.getElementById('bShop');
+if(bShop) bShop.onclick=()=>{
+  document.body.classList.toggle('shopOn');
+  bShop.querySelector('small').textContent=document.body.classList.contains('shopOn')?'close':'desk goods';
+};
 const FMT={
   short:{lo:2,hi:15, qs:['funny meme shorts','world events meme funny short','dank meme 15 seconds','viral humor short']},
   mid:{lo:60,hi:300, qs:['world news explained 3 minutes','breaking news recap','quick news dump today','white house news brief']},
