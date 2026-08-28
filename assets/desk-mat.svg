@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320" role="img" aria-label="Earth Desk Mat">
+  <rect width="640" height="320" rx="18" fill="#12061c"/>
+  <rect x="10" y="10" width="620" height="300" rx="12" fill="none" stroke="#c44dff" stroke-width="2"/>
+  <circle cx="320" cy="160" r="88" fill="#071018" stroke="#2dff7a" stroke-width="2"/>
+  <circle cx="320" cy="160" r="54" fill="#0a2a44"/>
+  <ellipse cx="320" cy="160" rx="54" ry="18" fill="none" stroke="#39f6ff" stroke-width="1"/>
+  <rect x="24" y="24" width="120" height="272" rx="8" fill="#16081f" stroke="#ff2ea644"/>
+  <rect x="496" y="24" width="120" height="272" rx="8" fill="#16081f" stroke="#ff2ea644"/>
+  <text x="320" y="278" text-anchor="middle" fill="#ff9adf" font-family="Segoe UI,sans-serif" font-size="18" letter-spacing="6">WHITE WINGS · EARTH DESK</text>
+</svg>
