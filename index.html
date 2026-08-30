@@ -39,6 +39,17 @@
   }
   body.trenchLook .hud { animation: hudBreathe 2.4s ease-in-out infinite; }
   body.trenchLook .hud { border-color:#7a2018 !important; }
+  body.trenchLook #bNow {
+    background:linear-gradient(90deg,#4a0000,#ff2a00 50%,#ff6a3a) !important;
+    border-color:#ff6a3a !important; box-shadow:0 0 22px #ff2a0088 !important;
+  }
+  #grain { position:fixed; inset:0; z-index:2; pointer-events:none; opacity:0; }
+  body.trenchLook #grain {
+    opacity:.22; mix-blend-mode:overlay;
+    background-image:repeating-radial-gradient(circle at 20% 40%, #fff2 0 1px, transparent 2px 4px);
+    animation: grainShake .12s steps(2) infinite;
+  }
+  @keyframes grainShake { 50% { transform:translate(1px,-1px); } }
   @keyframes hudBreathe {
     0%,100% { box-shadow:0 0 0 #c44dff00; }
     50% { box-shadow:0 0 18px #c44dff33; }
@@ -413,6 +424,7 @@
 </head>
 <body>
 <div id="aura" aria-hidden="true"></div>
+<div id="grain" aria-hidden="true"></div>
 <div id="globe"></div>
 <div id="street"></div>
 <button type="button" id="streetX" class="item">✕ GLOBE</button>
@@ -1912,10 +1924,25 @@ if(bVibeClip) bVibeClip.onclick=()=>{
 };
 document.addEventListener('pointerdown', ()=>{ if(vibeOn) resumeVibe(); }, {once:true});
 const bTrenchLook=document.getElementById('bTrenchLook');
-if(bTrenchLook) bTrenchLook.onclick=()=>{
-  document.body.classList.toggle('trenchLook');
-  bTrenchLook.textContent=document.body.classList.contains('trenchLook')?'TRENCH · ON':'TRENCH LOOK';
-};
+function setTrench(on){
+  document.body.classList.toggle('trenchLook', on);
+  if(bTrenchLook) bTrenchLook.textContent=on?'TRENCH · ON':'TRENCH LOOK';
+  try{
+    if(world){
+      world.atmosphereColor(on?'#ff4a1a':'#9ec9ff');
+      world.atmosphereAltitude(on?0.32:0.25);
+    }
+  }catch(e){}
+  if(on){
+    vibeOn=true; if(bVibe) bVibe.textContent='VIBE · ON';
+    pauseChatter(); resumeVibe();
+    if(window.say) say('TRENCH · original heat. Your nocturne is the bed.');
+  } else {
+    vibeOn=false; if(bVibe) bVibe.textContent='VIBE · OFF';
+    pauseVibe(); if(radioOn && !videoOn) resumeChatter();
+  }
+}
+if(bTrenchLook) bTrenchLook.onclick=()=>setTrench(!document.body.classList.contains('trenchLook'));
 const miraBox=document.getElementById('mira');
 if(miraBox) miraBox.onclick=()=>{
   if(videoOn) return;
