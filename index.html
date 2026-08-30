@@ -230,10 +230,17 @@
   #mkPick { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
   #mkPick button { font-size:9px; padding:3px 6px; border:1px solid #c44dff55; background:#12061c; color:#e8d0ff; cursor:pointer; }
   #mkPick button.on { border-color:#ff9adf; color:#fff; box-shadow:0 0 8px #ff2ea644; }
-  #mkBar { position:fixed; left:10px; bottom: 122px; z-index:6; width:min(230px,32vw); padding:6px 8px; }
+  #mkBar { position:fixed; left:12px; bottom: 134px; z-index:5; width:min(220px,28vw); padding:6px 8px;
+    max-height:22vh; overflow:auto; }
+  body:not(.lOff) #mkBar { display:none !important; }
   #mkBar .mktitle { font-size:8px; letter-spacing:.18em; color:#ff9adf; margin-bottom:4px; }
   #mkStrip { font-size:10px; max-height:22vh; overflow:hidden; }
-  @media (max-width:820px){ #mkBar { display:none; } }
+  @media (max-width:820px){ #mkBar { display:none !important; } }
+  #street { position:fixed; inset:0; z-index:2; display:none; }
+  body.streetOn #street { display:block; }
+  body.streetOn #globe, body.streetOn #sol, body.streetOn #fallback, body.streetOn #reel { opacity:.12; pointer-events:none; }
+  body.streetOn #streetX { display:block; }
+  #streetX { position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:10; display:none; }
   #bMeme { flex:1.1; }
   #census .mk { cursor:pointer; }
   #mira .tag {
@@ -241,7 +248,7 @@
     font-size:8px; letter-spacing:.18em; color:#e8d0ff; background:#12061cee;
     border-top:1px solid #c44dff66;
   }
-  #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:6; width:min(760px,94vw);
+  #bar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:8; width:min(760px,94vw);
     padding:0; display:flex; align-items:stretch; gap:0; overflow:hidden; }
   .bar-main { flex:1; min-width:0; padding:8px 10px 9px; }
   #say { text-align:left; font-size:11px; color:#d8c0f0; height:1.35em; line-height:1.35em;
@@ -328,9 +335,13 @@
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.41.4/dist/globe.gl.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css"/>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.min.js"></script>
 </head>
 <body>
 <div id="globe"></div>
+<div id="street"></div>
+<button type="button" id="streetX" class="item">✕ GLOBE</button>
 <video id="reel" src="assets/earth_spin.mp4" muted loop playsinline autoplay></video>
 <audio id="chatter" src="/assets/chatter.mp3" loop preload="auto"></audio>
 <div id="fallback" aria-hidden="true"><div class="land"></div><div class="shade"></div></div>
@@ -413,9 +424,10 @@
     <button class="item" id="bBird">Birds</button>
     <button class="item on" id="bSea">Seas</button>
     <button class="item on" id="bLand">Land</button>
+    <button class="item" id="bStreet">Streets</button>
   </div>
   <label class="sl">Altitude <b id="altN">2.4</b></label>
-  <input id="alt" type="range" min="0.5" max="6" step="0.05" value="2.4"/>
+  <input id="alt" type="range" min="0.12" max="6" step="0.02" value="2.4"/>
   <label class="sl">Spin <b id="spN">0.4</b></label>
   <input id="spin" type="range" min="0" max="2" step="0.05" value="0.4"/>
   <h2>LIVE</h2>
@@ -1515,10 +1527,44 @@ document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
   world.pointColor(d=> m==='ir' ? '#ff7a3a' : (d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227'));
 });
 onLayer('bCity'); onLayer('bArc'); onLayer('bIss'); onLayer('bPlane'); onLayer('bBird'); onLayer('bSea'); onLayer('bLand');
+const bSt=document.getElementById('bStreet');
+if(bSt) bSt.onclick=function(){
+  if(this.classList.contains('on')){ closeStreet(); this.classList.remove('on'); return; }
+  const pov=world?world.pointOfView():{lat:40.71,lng:-74.01};
+  openStreet(pov.lat, pov.lng, 14);
+};
+let streetMap=null;
+function openStreet(lat, lng, z){
+  const box=document.getElementById('street');
+  if(!box || !window.maplibregl){ say('Street map lib not loaded.'); return; }
+  document.body.classList.add('streetOn');
+  const b=document.getElementById('bStreet'); if(b) b.classList.add('on');
+  const c=[+lng||0, +lat||20];
+  const zoom=z||15;
+  try{
+    if(!streetMap){
+      streetMap=new maplibregl.Map({
+        container:'street',
+        style:'https://tiles.openfreemap.org/styles/liberty',
+        center:c, zoom:zoom, pitch:50, bearing:0
+      });
+    } else {
+      streetMap.setCenter(c); streetMap.setZoom(zoom); streetMap.setPitch(50);
+    }
+  }catch(e){ say('Street tiles failed.'); }
+}
+function closeStreet(){
+  document.body.classList.remove('streetOn');
+  const b=document.getElementById('bStreet'); if(b) b.classList.remove('on');
+}
+const sx=document.getElementById('streetX');
+if(sx) sx.onclick=()=>{ closeStreet(); const a=document.getElementById('alt'); if(a){ a.value=1.2; a.dispatchEvent(new Event('input')); } };
 document.getElementById('alt').oninput=e=>{
   const v=+e.target.value; document.getElementById('altN').textContent=v.toFixed(2);
   if(!world) return;
   const pov=world.pointOfView(); world.pointOfView({lat:pov.lat,lng:pov.lng,altitude:v});
+  if(v<=0.38) openStreet(pov.lat, pov.lng, Math.min(16, 11+(0.38-v)*18));
+  else closeStreet();
 };
 document.getElementById('spin').oninput=e=>{
   const v=+e.target.value; document.getElementById('spN').textContent=v.toFixed(2);
