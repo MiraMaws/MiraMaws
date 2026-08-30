@@ -409,6 +409,7 @@
 </button>
 <video id="reel" src="assets/earth_spin.mp4" muted loop playsinline autoplay></video>
 <audio id="chatter" src="/assets/chatter.mp3" loop preload="auto"></audio>
+<audio id="vibe" src="/assets/vibe.mp3" loop preload="auto"></audio>
 <div id="fallback" aria-hidden="true"><div class="land"></div><div class="shade"></div></div>
 <div id="sol" aria-hidden="true">
   <i class="pl su" style="--r:46vmin"></i>
@@ -506,6 +507,8 @@
   <div class="mrow"><span>Moon</span><b id="mMoon">…</b></div>
   <p id="sync">sync —</p>
   <button class="item" id="bRadio" type="button">RADIO · ON</button>
+  <button class="item" id="bVibe" type="button">VIBE · OFF</button>
+  <button class="item" id="bVibeClip" type="button">VIBE CLIP</button>
   <h2>WEATHER</h2>
   <div id="wx"></div>
   <h2>MARKETS</h2>
@@ -827,6 +830,7 @@ function hushDesk(){
   const box=document.getElementById('mira');
   if(box) box.classList.remove('talk');
   pauseChatter();
+  pauseVibe();
 }
 function miraVoice(){
   const vs=window.speechSynthesis?speechSynthesis.getVoices():[];
@@ -1149,7 +1153,7 @@ async function findYtTrend(){
     fetch(u).then(r=>r.text()).then(txt=>{
       const hits=[];
       try{ pickHits(JSON.parse(txt), hits); }catch(e){
-        [...txt.matchAll(/(?:watch\\?v=|\\/embed\\/|\"videoId\":\")([\\w-]{11})/g)].forEach(m=>hits.push({id:m[1], dur:0, views:0, likes:0}));
+        [...txt.matchAll(/(?:watch\?v=|\/embed\/|"videoId":")([\w-]{11})/g)].forEach(m=>hits.push({id:m[1], dur:0, views:0, likes:0}));
       }
       return hits;
     }),
@@ -1845,6 +1849,55 @@ document.addEventListener('pointerdown', armChatter, {once:true});
 if(chatter){ chatter.loop=true; chatter.volume=0.08; }
 resumeChatter();
 setInterval(()=>{ if(radioOn && !videoOn && chatter && chatter.paused) resumeChatter(); }, 4000);
+let vibeOn=false;
+const vibe=document.getElementById('vibe');
+const bVibe=document.getElementById('bVibe');
+function pauseVibe(){ try{ if(vibe) vibe.pause(); }catch(e){} }
+function resumeVibe(){
+  try{
+    if(!vibe || videoOn || !vibeOn) return;
+    vibe.loop=true; vibe.volume=0.14;
+    const p=vibe.play(); if(p&&p.catch) p.catch(()=>{});
+    pulseVibe();
+  }catch(e){}
+}
+let vibeCtx=null, vibeAn=null;
+function pulseVibe(){
+  const aura=document.getElementById('aura');
+  if(!vibe || !aura) return;
+  try{
+    if(!vibeCtx){
+      vibeCtx=new (window.AudioContext||window.webkitAudioContext)();
+      const src=vibeCtx.createMediaElementSource(vibe);
+      vibeAn=vibeCtx.createAnalyser(); vibeAn.fftSize=64;
+      src.connect(vibeAn); vibeAn.connect(vibeCtx.destination);
+    }
+    if(vibeCtx.state==='suspended') vibeCtx.resume();
+  }catch(e){ return; }
+  const data=new Uint8Array(vibeAn.frequencyBinCount);
+  (function tick(){
+    if(!vibeOn || videoOn){ aura.style.opacity='.55'; return; }
+    vibeAn.getByteFrequencyData(data);
+    let s=0; for(let i=0;i<data.length;i++) s+=data[i];
+    const n=s/(data.length*255);
+    aura.style.opacity=String(0.35+n*0.65);
+    aura.style.filter='hue-rotate('+(n*80)+'deg) saturate('+(1+n)+')';
+    requestAnimationFrame(tick);
+  })();
+}
+if(bVibe) bVibe.onclick=()=>{
+  vibeOn=!vibeOn;
+  bVibe.textContent=vibeOn?'VIBE · ON':'VIBE · OFF';
+  if(vibeOn){ pauseChatter(); resumeVibe(); }
+  else { pauseVibe(); if(radioOn && !videoOn) resumeChatter(); }
+};
+const bVibeClip=document.getElementById('bVibeClip');
+if(bVibeClip) bVibeClip.onclick=()=>{
+  showPinShell('VIBE CLIP');
+  usedVids.delete('dTMaXh52_2k');
+  mountYt('dTMaXh52_2k');
+};
+document.addEventListener('pointerdown', ()=>{ if(vibeOn) resumeVibe(); }, {once:true});
 const miraBox=document.getElementById('mira');
 if(miraBox) miraBox.onclick=()=>{
   if(videoOn) return;
