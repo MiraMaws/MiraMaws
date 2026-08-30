@@ -26,7 +26,19 @@
     50% { filter:hue-rotate(25deg); transform:translate3d(-1.5%, 1%, 0); }
     100% { filter:hue-rotate(0deg); transform:translate3d(0,0,0); }
   }
-  .hud { animation: hudBreathe 8s ease-in-out infinite; }
+  body.trenchLook {
+    --g:#ff3b1f; --c:#ff6a3a; --m:#ff2a00; --ink:#ffe8dc; --d:#c48a72;
+    --bg:#050202; --pan:#140606ee; --line:#5a1818; --hot:#ff3d1a; --ok:#ffb020;
+  }
+  body.trenchLook #aura {
+    background:
+      radial-gradient(ellipse at 30% 20%, #ff2a0033, transparent 40%),
+      radial-gradient(ellipse at 70% 80%, #ff6a3a22, transparent 42%),
+      repeating-linear-gradient(180deg, transparent 0 2px, #00000055 3px, transparent 5px);
+    animation: auraDrift 7s linear infinite;
+  }
+  body.trenchLook .hud { animation: hudBreathe 2.4s ease-in-out infinite; }
+  body.trenchLook .hud { border-color:#7a2018 !important; }
   @keyframes hudBreathe {
     0%,100% { box-shadow:0 0 0 #c44dff00; }
     50% { box-shadow:0 0 18px #c44dff33; }
@@ -509,6 +521,7 @@
   <button class="item" id="bRadio" type="button">RADIO · ON</button>
   <button class="item" id="bVibe" type="button">VIBE · OFF</button>
   <button class="item" id="bVibeClip" type="button">VIBE CLIP</button>
+  <button class="item" id="bTrenchLook" type="button">TRENCH LOOK</button>
   <h2>WEATHER</h2>
   <div id="wx"></div>
   <h2>MARKETS</h2>
@@ -1898,6 +1911,11 @@ if(bVibeClip) bVibeClip.onclick=()=>{
   mountYt('dTMaXh52_2k');
 };
 document.addEventListener('pointerdown', ()=>{ if(vibeOn) resumeVibe(); }, {once:true});
+const bTrenchLook=document.getElementById('bTrenchLook');
+if(bTrenchLook) bTrenchLook.onclick=()=>{
+  document.body.classList.toggle('trenchLook');
+  bTrenchLook.textContent=document.body.classList.contains('trenchLook')?'TRENCH · ON':'TRENCH LOOK';
+};
 const miraBox=document.getElementById('mira');
 if(miraBox) miraBox.onclick=()=>{
   if(videoOn) return;
