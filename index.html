@@ -412,6 +412,7 @@
     <button class="item" id="bPlane">Planes</button>
     <button class="item" id="bBird">Birds</button>
     <button class="item on" id="bSea">Seas</button>
+    <button class="item on" id="bLand">Land</button>
   </div>
   <label class="sl">Altitude <b id="altN">2.4</b></label>
   <input id="alt" type="range" min="0.5" max="6" step="0.05" value="2.4"/>
@@ -572,7 +573,40 @@ const PLACES=[
   {name:'Wellington',c:'New Zealand',lat:-41.29,lng:174.78,pop:'0.4m'},
   {name:'Brussels',c:'Belgium',lat:50.85,lng:4.35,pop:'1.2m'},
   {name:'Geneva',c:'Switzerland',lat:46.20,lng:6.14,pop:'0.2m'},
-  {name:'Vienna',c:'Austria',lat:48.21,lng:16.37,pop:'2m'}
+  {name:'Vienna',c:'Austria',lat:48.21,lng:16.37,pop:'2m'},
+  {name:'Dubai',c:'UAE',lat:25.20,lng:55.27,pop:'3.5m'},
+  {name:'Mumbai',c:'India',lat:19.08,lng:72.88,pop:'21m'},
+  {name:'Shanghai',c:'China',lat:31.23,lng:121.47,pop:'26m'},
+  {name:'Hong Kong',c:'China',lat:22.32,lng:114.17,pop:'7.5m'},
+  {name:'San Francisco',c:'United States',lat:37.77,lng:-122.42,pop:'0.9m'},
+  {name:'Houston',c:'United States',lat:29.76,lng:-95.37,pop:'2.3m'},
+  {name:'Miami',c:'United States',lat:25.76,lng:-80.19,pop:'0.5m'},
+  {name:'Montreal',c:'Canada',lat:45.50,lng:-73.57,pop:'1.8m'},
+  {name:'Santiago',c:'Chile',lat:-33.45,lng:-70.67,pop:'7m'},
+  {name:'Casablanca',c:'Morocco',lat:33.57,lng:-7.59,pop:'3.7m'},
+  {name:'Algiers',c:'Algeria',lat:36.75,lng:3.06,pop:'2.6m'},
+  {name:'Khartoum',c:'Sudan',lat:15.50,lng:32.56,pop:'5m'},
+  {name:'Dakar',c:'Senegal',lat:14.72,lng:-17.47,pop:'1.1m'},
+  {name:'Melbourne',c:'Australia',lat:-37.81,lng:144.96,pop:'5m'},
+  {name:'Auckland',c:'New Zealand',lat:-36.85,lng:174.76,pop:'1.7m'},
+  {name:'Reykjavik',c:'Iceland',lat:64.15,lng:-21.94,pop:'0.1m'},
+  {name:'Nuuk',c:'Greenland',lat:64.18,lng:-51.72,pop:'0.02m'},
+  {name:'Honolulu',c:'United States',lat:21.31,lng:-157.86,pop:'0.3m'},
+  {name:'Anchorage',c:'United States',lat:61.22,lng:-149.90,pop:'0.3m'}
+];
+const LANDMARKS=[
+  {name:'Everest',c:'Peak',lat:27.99,lng:86.93,pop:'8849m',kind:'land'},
+  {name:'Kilimanjaro',c:'Peak',lat:-3.07,lng:37.35,pop:'5895m',kind:'land'},
+  {name:'Fuji',c:'Peak',lat:35.36,lng:138.73,pop:'3776m',kind:'land'},
+  {name:'Vesuvius',c:'Volcano',lat:40.82,lng:14.43,pop:'',kind:'land'},
+  {name:'Yellowstone',c:'Volcano',lat:44.43,lng:-110.59,pop:'',kind:'land'},
+  {name:'Mariana Trench',c:'Ocean',lat:11.35,lng:142.20,pop:'-11000m',kind:'sea'},
+  {name:'Great Barrier Reef',c:'Reef',lat:-18.29,lng:147.70,pop:'',kind:'sea'},
+  {name:'Sahara',c:'Desert',lat:23.4,lng:13.0,pop:'modeled',kind:'land'},
+  {name:'Amazon mouth',c:'River',lat:0.0,lng:-50.0,pop:'',kind:'sea'},
+  {name:'Victoria Falls',c:'Falls',lat:-17.92,lng:25.85,pop:'',kind:'land'},
+  {name:'Grand Canyon',c:'Canyon',lat:36.11,lng:-112.11,pop:'',kind:'land'},
+  {name:'Vostok',c:'Ice',lat:-78.46,lng:106.84,pop:'Antarctica',kind:'land'}
 ];
 const ALIAS={
   usa:'United States','u.s.':'United States','u.s.a.':'United States',america:'United States',american:'United States',
@@ -605,7 +639,10 @@ const BIRD_ARCS=[
   {startLat:70,startLng:-100,endLat:20,endLng:-90},
   {startLat:65,startLng:40,endLat:10,endLng:30},
   {startLat:-40,startLng:-70,endLat:10,endLng:-60},
-  {startLat:55,startLng:130,endLat:-10,endLng:130}
+  {startLat:55,startLng:130,endLat:-10,endLng:130},
+  {startLat:1.35,startLng:103.82,endLat:51.51,endLng:-0.13},
+  {startLat:31.23,startLng:121.47,endLat:33.75,endLng:-118.25},
+  {startLat:-33.92,startLng:18.42,endLat:51.51,endLng:-0.13}
 ];
 let issPin=null, planePins=[], fireN=0;
 const HEX=[...Array(80)].map((_,i)=>{
@@ -819,7 +856,11 @@ function fillWeather(){
     {name:'Cairo', lat:30.04, lng:31.24},
     {name:'Tokyo', lat:35.68, lng:139.69},
     {name:'Sydney', lat:-33.87, lng:151.21},
-    {name:'SF', lat:37.77, lng:-122.42}
+    {name:'SF', lat:37.77, lng:-122.42},
+    {name:'Delhi', lat:28.61, lng:77.21},
+    {name:'São Paulo', lat:-23.55, lng:-46.63},
+    {name:'Lagos', lat:6.52, lng:3.38},
+    {name:'Reykjavik', lat:64.15, lng:-21.94}
   ];
   const lats=spots.map(s=>s.lat).join(',');
   const lngs=spots.map(s=>s.lng).join(',');
@@ -1191,6 +1232,7 @@ function paintPins(){
   let pts=[];
   if(document.getElementById('bCity').classList.contains('on')) pts=pts.concat(PLACES);
   if(document.getElementById('bSea') && document.getElementById('bSea').classList.contains('on')) pts=pts.concat(SEAS, ISLANDS);
+  if(document.getElementById('bLand') && document.getElementById('bLand').classList.contains('on')) pts=pts.concat(LANDMARKS);
   if(document.getElementById('bIss') && document.getElementById('bIss').classList.contains('on') && issPin) pts=pts.concat([issPin]);
   if(document.getElementById('bPlane') && document.getElementById('bPlane').classList.contains('on')) pts=pts.concat(planePins);
   pts=pts.concat(livePins);
@@ -1472,7 +1514,7 @@ document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
   world.atmosphereColor(m==='ir'?'#ff5a2a': m==='data'?'#3dd6c6':'#9ec9ff');
   world.pointColor(d=> m==='ir' ? '#ff7a3a' : (d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227'));
 });
-onLayer('bCity'); onLayer('bArc'); onLayer('bIss'); onLayer('bPlane'); onLayer('bBird'); onLayer('bSea');
+onLayer('bCity'); onLayer('bArc'); onLayer('bIss'); onLayer('bPlane'); onLayer('bBird'); onLayer('bSea'); onLayer('bLand');
 document.getElementById('alt').oninput=e=>{
   const v=+e.target.value; document.getElementById('altN').textContent=v.toFixed(2);
   if(!world) return;
@@ -1758,6 +1800,15 @@ if(window.matchMedia && matchMedia('(max-width:820px)').matches){
 loadToday().then(()=>{ paintNews(); return syncEarth(); });
 setInterval(()=>{ loadToday().then(()=>paintNews()); }, 10000);
 setInterval(()=>{ syncEarth(); }, 60000);
+setInterval(()=>{
+  fetch('https://api.wheretheiss.at/v1/satellites/25544').then(r=>r.json()).then(j=>{
+    if(!j||j.latitude==null) return;
+    issPin={name:'ISS', c:'Orbit', lat:+j.latitude, lng:+j.longitude, pop:Math.round(j.altitude)+' km', kind:'iss'};
+    const mi=document.getElementById('mIss');
+    if(mi) mi.textContent=j.latitude.toFixed(1)+'° '+j.longitude.toFixed(1)+'°';
+    paintPins();
+  }).catch(()=>{});
+}, 20000);
 
 const ASSETS=[
   {id:'BTC', label:'BITCOIN', kind:'cg', cg:'bitcoin'},
