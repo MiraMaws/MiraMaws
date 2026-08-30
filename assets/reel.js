@@ -1,11 +1,11 @@
-/* REELS — no play until tap, then always unmuted. Random unused IDs. */
+/* REELS — first tap unlocks sound, then infinite autoplay of unused clips. */
 (function(){
   const QS=[
     'viral shorts today','trending meme shorts','funny short clip',
     'world news shorts','crazy fail shorts','animal shorts funny',
     'space shorts','tech shorts viral','sports highlights shorts'
   ];
-  let deck=[], lastId='', soundOn=false, busy=false;
+  let deck=[], lastId='', soundOn=false, busy=false, loopT=0;
   const SEEN_KEY='ww_reel_seen';
   function loadSeen(){
     try{ return JSON.parse(localStorage.getItem(SEEN_KEY)||'[]'); }catch(e){ return []; }
@@ -58,11 +58,22 @@
       if(deck.length<4) fillFast();
     } finally { busy=false; }
   }
+  function armLoop(){
+    if(loopT) return;
+    loopT=setInterval(()=>{
+      if(document.body.classList.contains('streetOn')) return;
+      next();
+    }, 9000);
+  }
   function go(){
-    if(soundOn){ next(); return; }
-    soundOn=true;
-    const t=document.getElementById('reelTitle');
-    if(t) t.textContent='REELS';
+    if(!soundOn){
+      soundOn=true;
+      const t=document.getElementById('reelTitle');
+      if(t) t.textContent='REELS';
+      next();
+      armLoop();
+      return;
+    }
     next();
   }
   window.initReel=function(){
