@@ -97,6 +97,47 @@
     background:repeating-linear-gradient(180deg, transparent 0 2px, #fff1 3px);
     animation: scan 6s linear infinite;
   }
+  #hudGrid {
+    position:fixed; inset:0; z-index:2; pointer-events:none;
+    background-image:
+      linear-gradient(#ffffff08 1px, transparent 1px),
+      linear-gradient(90deg, #ffffff08 1px, transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(ellipse at 50% 45%, #000 20%, transparent 72%);
+  }
+  #hudRing {
+    position:fixed; left:50%; top:44%; width:min(62vmin,480px); height:min(62vmin,480px);
+    transform:translate(-50%,-50%); z-index:2; pointer-events:none;
+    border:1px solid #ffffff22; border-radius:50%;
+    box-shadow:0 0 0 1px #ffffff11, inset 0 0 40px #ffffff08;
+    animation: ringSpin 80s linear infinite;
+  }
+  #hudRing::before, #hudRing::after {
+    content:""; position:absolute; inset:8%; border:1px dashed #ffffff22; border-radius:50%;
+  }
+  #hudRing::after { inset:18%; border-style:solid; border-width:1px 0 1px 0; }
+  @keyframes ringSpin { to { transform:translate(-50%,-50%) rotate(360deg); } }
+  .gauges { display:flex; gap:8px; margin:8px 0; }
+  .gauge {
+    flex:1; aspect-ratio:1; border:2px solid #fff; border-radius:50%;
+    display:grid; place-items:center; position:relative;
+    background:conic-gradient(#fff var(--p,40%), #222 0);
+  }
+  .gauge i {
+    position:absolute; inset:6px; background:#000; border-radius:50%;
+    display:grid; place-items:center; font-size:9px; letter-spacing:.08em; color:#fff;
+  }
+  .loadbar {
+    height:10px; margin:3px 0 8px; border:1px solid #fff; background:#000;
+    position:relative; overflow:hidden;
+    clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);
+  }
+  .loadbar span {
+    display:block; height:100%; width:var(--w,40%); background:
+      repeating-linear-gradient(90deg, #fff 0 6px, #000 6px 8px);
+    animation: loadPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes loadPulse { 50% { filter:brightness(1.4); } }
   @keyframes scan { 0% { background-position:0 0; } 100% { background-position:0 24px; } }
   .side { position:fixed; top:10px; bottom:108px; z-index:6; width:250px;
     padding:10px 10px 8px; overflow:hidden; }
@@ -137,10 +178,12 @@
   @keyframes flash { 50% { box-shadow:0 0 34px #ff7ad9; filter:brightness(1.08); } }
   label.sl { display:flex; justify-content:space-between; font-size:10px; color:var(--d); margin:5px 0 1px; }
   input[type=range] { width:100%; accent-color:var(--hot); }
-  .ev { border:1px solid #ffffff33; padding:6px 7px; margin:4px 0; cursor:pointer; background:#10051a; }
-  .ev:hover { border-color:var(--m); box-shadow:0 0 10px #ffffff33; }
-  .ev b { display:block; font-size:11px; color:#e8e8e8; }
-  .ev span { font-size:10px; color:var(--d); }
+  .ev { border:1px solid #ffffff33; padding:6px 7px; margin:4px 0; cursor:pointer; background:#050505; }
+  .ev:hover { border-color:#fff; box-shadow:0 0 10px #ffffff33; }
+  .ev b { display:block; font-size:11px; color:#fff; }
+  .ev span { font-size:10px; color:#9a9a9a; }
+  #feed, #arch { color:#ddd; }
+  #evSub { color:#9a9a9a; }
   #pin { position:fixed; top:50%; left:50%; right:auto; bottom:auto; z-index:9;
     --ps:1;
     width:min(1280px,72vw); height:auto; min-width:640px; min-height:360px;
@@ -296,7 +339,7 @@
   @media (max-width:820px){ #mkBar { display:none !important; } }
   #street { position:fixed; inset:0; z-index:2; display:none; }
   body.streetOn #street { display:block; }
-  body.streetOn #grain, body.streetOn #aura { display:none; }
+  body.streetOn #hudGrid, body.streetOn #hudRing { display:none; }
   #trenches {
     position:fixed; left:50%; top:10px; bottom:128px; transform:translateX(-50%);
     z-index:8; width:min(740px,72vw); display:none; overflow:auto; padding:12px;
@@ -455,6 +498,8 @@
 <body>
 <div id="aura" aria-hidden="true"></div>
 <div id="grain" aria-hidden="true"></div>
+<div id="hudGrid" aria-hidden="true"></div>
+<div id="hudRing" aria-hidden="true"></div>
 <div id="globe"></div>
 <div id="street"></div>
 <button type="button" id="streetX" class="item">✕ GLOBE</button>
@@ -550,6 +595,12 @@
   <label class="sl">Spin <b id="spN">0.4</b></label>
   <input id="spin" type="range" min="0" max="2" step="0.05" value="0.4"/>
   <h2>LIVE</h2>
+  <div class="gauges">
+    <div class="gauge" id="gOrb" style="--p:40%"><i>ORB</i></div>
+    <div class="gauge" id="gQ" style="--p:20%"><i>QK</i></div>
+    <div class="gauge" id="gFly" style="--p:10%"><i>AIR</i></div>
+  </div>
+  <div class="loadbar" id="lbCo2"><span style="--w:55%"></span></div>
   <div class="mrow"><span>CO₂</span><b id="mCo2">…</b></div>
   <div class="mrow"><span>Temp Δ</span><b id="mTemp">…</b></div>
   <div class="mrow"><span>Orbit</span><b id="mOrb">…</b></div>
@@ -1614,6 +1665,20 @@ async function loadToday(){
   return liveStories;
 }
 
+function setGauge(id, pct){
+  const el=document.getElementById(id); if(!el) return;
+  el.style.setProperty('--p', Math.max(4, Math.min(100, pct))+'%');
+}
+function paintGauges(){
+  const o=parseFloat((document.getElementById('mOrb')||{}).textContent)||0;
+  const q=parseFloat((document.getElementById('mQ')||{}).textContent)||0;
+  const f=parseFloat((document.getElementById('mFly')||{}).textContent)||0;
+  setGauge('gOrb', o);
+  setGauge('gQ', Math.min(100, q*5));
+  setGauge('gFly', Math.min(100, f*2));
+  const bar=document.querySelector('#lbCo2 span');
+  if(bar) bar.style.setProperty('--w', Math.min(100, 40+o/2)+'%');
+}
 async function syncEarth(){
   document.getElementById('mOrb').textContent=orbitPct().toFixed(3)+'%';
   try{
@@ -1676,10 +1741,12 @@ async function syncEarth(){
       document.getElementById('mTemp').textContent=(v>=0?'+':'')+v.toFixed(2)+'°';
     } else document.getElementById('mTemp').textContent='n/a';
     paintPins();
+    paintGauges();
     document.getElementById('sync').textContent='sync '+new Date().toLocaleTimeString()+' · USGS · EONET · ISS · OpenSky';
   }catch(e){
     document.getElementById('sync').textContent='sync partial';
     paintPins();
+    paintGauges();
   }
 }
 
@@ -1689,7 +1756,7 @@ document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
   if(!world) return;
   const m=b.dataset.m;
   world.globeImageUrl(TEX[m]||TEX.natural);
-  world.atmosphereColor(m==='ir'?'#ff5a2a': m==='data'?'#3dd6c6':'#9ec9ff');
+  world.atmosphereColor('#ffffff');
   world.pointColor(d=> m==='ir' ? '#ff7a3a' : (d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227'));
 });
 onLayer('bCity'); onLayer('bArc'); onLayer('bIss'); onLayer('bPlane'); onLayer('bBird'); onLayer('bSea'); onLayer('bLand');
