@@ -241,7 +241,12 @@
   body.streetOn #globe, body.streetOn #sol, body.streetOn #fallback, body.streetOn #reel { opacity:.12; pointer-events:none; }
   body.streetOn #streetX { display:block; }
   #streetX { position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:10; display:none; }
-  #bMeme { flex:1.1; }
+  #dodo {
+    position:fixed; left:14px; top:48%; z-index:7; width:64px; cursor:pointer;
+    filter:drop-shadow(0 0 10px #c44dff88);
+  }
+  body.lOff #dodo { left:14px; }
+  #dodo:hover { transform:scale(1.06); }
   #census .mk { cursor:pointer; }
   #mira .tag {
     position:absolute; left:0; right:0; bottom:0; z-index:2; margin:0; padding:4px 0 5px;
@@ -342,6 +347,9 @@
 <div id="globe"></div>
 <div id="street"></div>
 <button type="button" id="streetX" class="item">✕ GLOBE</button>
+<button type="button" id="dodo" title="Follow the dodo">
+  <img src="/assets/dodo.svg" alt="Dodo"/>
+</button>
 <video id="reel" src="assets/earth_spin.mp4" muted loop playsinline autoplay></video>
 <audio id="chatter" src="/assets/chatter.mp3" loop preload="auto"></audio>
 <div id="fallback" aria-hidden="true"><div class="land"></div><div class="shade"></div></div>
@@ -1533,6 +1541,28 @@ if(bSt) bSt.onclick=function(){
   const pov=world?world.pointOfView():{lat:40.71,lng:-74.01};
   openStreet(pov.lat, pov.lng, 14);
 };
+const HOLES=[
+  {lat:30.04,lng:31.24,title:'Hole 1 · Nile door', text:'The first door is a river. Cities drink it. Follow the bird.'},
+  {lat:51.51,lng:-0.13,title:'Hole 2 · Clock lie', text:'Clocks here run both ways. The dodo does not care about GMT.'},
+  {lat:35.68,lng:139.69,title:'Hole 3 · Quiet neon', text:'The loudest street is the one that forgot to speak.'},
+  {lat:-27.11,lng:-109.36,title:'Hole 4 · Stone gaze', text:'Heads in the Pacific. They are not looking at you. Keep walking.'},
+  {lat:64.15,lng:-21.94,title:'Hole 5 · Fire ice', text:'A small capital on a crack in the planet. The bird likes the heat.'},
+  {lat:-20.0,lng:57.5,title:'Hole 6 · Extinction nest', text:'Mauritius. The dodo was real. The clip is the riddle — not a lecture.', yt:'hPbHl21IqB0'},
+  {lat:-78.46,lng:106.84,title:'Hole 7 · Ice memory', text:'Vostok. The planet files itself under a kilometer of ice.'},
+  {lat:40.71,lng:-74.01,title:'Hole 8 · Return dock', text:'The trail ends where the desk already was. Tap the dodo to walk it again.'}
+];
+let holeI=0;
+function followHole(){
+  const h=HOLES[holeI%HOLES.length];
+  holeI++;
+  lastSource={brand:'White Wings', site:'miramaws.com', person:'Dodo', date:todayISO()};
+  const p={name:h.title, c:'Trail', lat:h.lat, lng:h.lng, pop:''};
+  flyTo(p, h.title, h.text);
+  say(h.title+' · '+h.text);
+  if(h.yt){ showPinShell(h.title); usedVids.delete(h.yt); mountYt(h.yt); }
+}
+const dodoBtn=document.getElementById('dodo');
+if(dodoBtn) dodoBtn.onclick=followHole;
 let streetMap=null;
 function openStreet(lat, lng, z){
   const box=document.getElementById('street');
