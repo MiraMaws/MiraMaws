@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Dodo">
-  <ellipse cx="64" cy="78" rx="28" ry="22" fill="#6b4a8f"/>
-  <ellipse cx="58" cy="48" rx="22" ry="20" fill="#8a6bb0"/>
-  <ellipse cx="48" cy="42" rx="7" ry="8" fill="#1a1020"/>
-  <ellipse cx="50" cy="41" rx="2" ry="2" fill="#ffd36a"/>
-  <path d="M36 48 Q 12 44 20 56 Q 28 62 40 54" fill="#c9a24f"/>
-  <path d="M72 96 Q 90 110 70 112 Q 58 108 64 98" fill="#c44dff"/>
-  <circle cx="88" cy="88" r="7" fill="#ff9adf"/>
+  <ellipse cx="64" cy="78" rx="28" ry="22" fill="#cfcfcf"/>
+  <ellipse cx="58" cy="48" rx="22" ry="20" fill="#e8e8e8"/>
+  <ellipse cx="48" cy="42" rx="7" ry="8" fill="#111"/>
+  <ellipse cx="50" cy="41" rx="2" ry="2" fill="#fff"/>
+  <path d="M36 48 Q 12 44 20 56 Q 28 62 40 54" fill="#9a9a9a"/>
+  <path d="M72 96 Q 90 110 70 112 Q 58 108 64 98" fill="#888"/>
+  <circle cx="88" cy="88" r="7" fill="#fff"/>
 </svg>
