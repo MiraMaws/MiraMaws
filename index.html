@@ -1083,7 +1083,7 @@ function pickHits(obj, out){
       const p=dur.split(':').map(Number);
       dur=p.length===3?p[0]*3600+p[1]*60+p[2]:p[0]*60+(p[1]||0);
     }
-    out.push({id:vid, dur:+dur||0, views:+(v.views||v.viewCount||v.viewcount||0)||0});
+    out.push({id:vid, dur:+dur||0, views:+(v.views||v.viewCount||v.viewcount||0)||0, likes:+(v.likes||v.likeCount||v.like||0)||0});
   });
   const dump=JSON.stringify(obj);
   const re=/"videoId"\s*:\s*"([\w-]{11})"/g; let m;
@@ -1096,6 +1096,7 @@ function rankHits(hits, lo, hi){
     const prev=map[h.id]||{id:h.id, dur:0, views:0};
     prev.dur=Math.max(prev.dur, +h.dur||0);
     prev.views=Math.max(prev.views, +h.views||0);
+    prev.likes=Math.max(prev.likes||0, +h.likes||0);
     map[h.id]=prev;
   });
   return Object.values(map).sort((a,b)=>{
@@ -1107,6 +1108,8 @@ function rankHits(hits, lo, hi){
     }
     const as=band(a.dur), bs=band(b.dur);
     if(as!==bs) return bs-as;
+    const lv=(b.likes||0)-(a.likes||0);
+    if(lv) return lv;
     return (b.views||0)-(a.views||0);
   }).filter(h=>lo==null || !h.dur || (h.dur>=lo && h.dur<=hi) || h.dur===0)
     .map(h=>h.id).slice(0,16);
@@ -1133,6 +1136,29 @@ async function findYtIds(query, lo, hi){
   ]).catch(()=>[]));
   const batches=await Promise.all(jobs);
   return rankHits([].concat(...batches), lo, hi);
+}
+async function findYtTrend(){
+  const urls=[
+    'https://invidious.privacyredirect.com/api/v1/trending?type=default',
+    'https://yt.artemislena.eu/api/v1/trending?type=default',
+    'https://iv.ggtyler.dev/api/v1/trending?type=default',
+    'https://pipedapi.reallyaweso.me/trending?region=US',
+    'https://api.piped.private.coffee/trending?region=US'
+  ];
+  const jobs=urls.map(u=>Promise.race([
+    fetch(u).then(r=>r.text()).then(txt=>{
+      const hits=[];
+      try{ pickHits(JSON.parse(txt), hits); }catch(e){
+        [...txt.matchAll(/(?:watch\\?v=|\\/embed\\/|\"videoId\":\")([\\w-]{11})/g)].forEach(m=>hits.push({id:m[1], dur:0, views:0, likes:0}));
+      }
+      return hits;
+    }),
+    new Promise(res=>setTimeout(()=>res([]), 4500))
+  ]).catch(()=>[]));
+  const batches=await Promise.all(jobs);
+  const shortQ=['trending shorts today','viral shorts today','funny meme shorts'];
+  const extra=await Promise.all(shortQ.map(q=>findYtIds(q, 2, 60)));
+  return rankHits([].concat(...batches, ...extra.map(ids=>ids.map(id=>({id, dur:0, views:0, likes:0})))), 2, 60);
 }
 async function loadComments(id){
   const host=document.getElementById('ytcList'); if(!host) return;
