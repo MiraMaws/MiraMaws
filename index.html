@@ -7,7 +7,8 @@
 <style>
   :root { --g:#ff4ec8; --c:#c44dff; --m:#ff2ea6; --ink:#f4e8ff; --d:#9a7ab8; --bg:#070312; --pan:#12061ce8; --line:#3a1458; --hot:#ff3d9a; --ok:#39f6c0; }
   * { box-sizing:border-box; margin:0; }
-  html,body,#globe { height:100%; background:var(--bg); color:var(--ink); font-family:"Segoe UI",ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
+  html,body,#globe { height:100%; background:var(--bg); color:var(--ink); font-family:"Segoe UI",ui-sans-serif,system-ui,sans-serif; overflow:hidden;
+    font-size:clamp(11px, 0.85vw + 9px, 16px); }
   #globe { position:fixed; inset:0; width:100%; height:100%; min-height:100dvh; }
   html,body { background:#070312 url('assets/space.jpg') center/cover no-repeat fixed; }
   #reel { position:fixed; left:50%; top:44%; width:min(70vmin,520px); height:min(70vmin,520px);
@@ -407,7 +408,10 @@
   <div class="grid2">
     <button class="item on" id="bCity">Cities</button>
     <button class="item on" id="bArc">Paths</button>
-    <button class="item on" id="bHex">Field</button>
+    <button class="item" id="bIss">ISS</button>
+    <button class="item" id="bPlane">Planes</button>
+    <button class="item" id="bBird">Birds</button>
+    <button class="item on" id="bSea">Seas</button>
   </div>
   <label class="sl">Altitude <b id="altN">2.4</b></label>
   <input id="alt" type="range" min="0.5" max="6" step="0.05" value="2.4"/>
@@ -418,6 +422,10 @@
   <div class="mrow"><span>Temp Δ</span><b id="mTemp">…</b></div>
   <div class="mrow"><span>Orbit</span><b id="mOrb">…</b></div>
   <div class="mrow"><span>Quakes</span><b id="mQ">…</b></div>
+  <div class="mrow"><span>Fires</span><b id="mFire">…</b></div>
+  <div class="mrow"><span>ISS</span><b id="mIss">…</b></div>
+  <div class="mrow"><span>Planes</span><b id="mFly">…</b></div>
+  <div class="mrow"><span>Moon</span><b id="mMoon">…</b></div>
   <p id="sync">sync —</p>
   <button class="item" id="bRadio" type="button">RADIO · ON</button>
   <h2>WEATHER</h2>
@@ -576,6 +584,30 @@ const ARCS=[
   {startLat:51.51,startLng:-0.13,endLat:28.61,endLng:77.21},{startLat:-33.87,startLng:151.21,endLat:-6.21,endLng:106.85},
   {startLat:19.43,startLng:-99.13,endLat:-23.55,endLng:-46.63}
 ];
+const SEAS=[
+  {name:'Pacific', c:'Ocean', lat:0, lng:-160, pop:'modeled', kind:'sea'},
+  {name:'Atlantic', c:'Ocean', lat:10, lng:-30, pop:'modeled', kind:'sea'},
+  {name:'Indian', c:'Ocean', lat:-20, lng:80, pop:'modeled', kind:'sea'},
+  {name:'Arctic', c:'Ocean', lat:80, lng:0, pop:'modeled', kind:'sea'},
+  {name:'Southern', c:'Ocean', lat:-60, lng:20, pop:'modeled', kind:'sea'}
+];
+const ISLANDS=[
+  {name:'Greenland', c:'Island', lat:72, lng:-40, pop:'', kind:'isle'},
+  {name:'Madagascar', c:'Island', lat:-19.5, lng:46.8, pop:'', kind:'isle'},
+  {name:'Iceland', c:'Island', lat:64.8, lng:-18, pop:'', kind:'isle'},
+  {name:'Cuba', c:'Island', lat:21.5, lng:-79, pop:'', kind:'isle'},
+  {name:'Honshu', c:'Island', lat:36.5, lng:138.2, pop:'', kind:'isle'},
+  {name:'New Guinea', c:'Island', lat:-5.5, lng:141, pop:'', kind:'isle'},
+  {name:'Borneo', c:'Island', lat:0.5, lng:114, pop:'', kind:'isle'},
+  {name:'Great Britain', c:'Island', lat:54, lng:-2.5, pop:'', kind:'isle'}
+];
+const BIRD_ARCS=[
+  {startLat:70,startLng:-100,endLat:20,endLng:-90},
+  {startLat:65,startLng:40,endLat:10,endLng:30},
+  {startLat:-40,startLng:-70,endLat:10,endLng:-60},
+  {startLat:55,startLng:130,endLat:-10,endLng:130}
+];
+let issPin=null, planePins=[], fireN=0;
 const HEX=[...Array(80)].map((_,i)=>{
   const p=PLACES[i%PLACES.length];
   return {lat:p.lat+(Math.random()-0.5)*8, lng:p.lng+(Math.random()-0.5)*10};
@@ -634,9 +666,9 @@ try{
     .atmosphereAltitude(0.25)
     .pointsData(PLACES)
     .pointLat('lat').pointLng('lng')
-    .pointColor(d=> d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227')
-    .pointAltitude(0.01)
-    .pointRadius(0.22)
+    .pointColor(d=> d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : d.kind==='iss' ? '#ffffff' : d.kind==='plane' ? '#39f6ff' : d.kind==='sea' ? '#2d7dff' : d.kind==='isle' ? '#7dffb0' : '#c9a227')
+    .pointAltitude(d=> d.kind==='iss'?0.08:0.01)
+    .pointRadius(d=> d.kind==='iss'?0.55: d.kind==='sea'?0.65: d.kind==='plane'?0.12:0.22)
     .pointLabel(d=>d.name+', '+d.c)
     .onPointClick(d=>flyTo(d, d.name+' · '+d.c));
   world.controls().autoRotate=true;
@@ -1130,10 +1162,39 @@ function seenSave(){ try{ localStorage.setItem('ww_seen', JSON.stringify([...see
 function matchPlaceOld(){}
 
 let livePins=[];
+function moonPhase(){
+  const syn=29.53058867;
+  const days=(Date.now()-Date.UTC(2000,0,6,18,14))/86400000;
+  const p=((days%syn)+syn)%syn;
+  if(p<1.9||p>27.6) return 'new';
+  if(p<7.4) return 'wax';
+  if(p<9.1) return '1st';
+  if(p<13.8) return 'gib';
+  if(p<16.6) return 'full';
+  if(p<21.5) return 'gib';
+  if(p<23.5) return '3rd';
+  return 'wane';
+}
+function onLayer(id){
+  const el=document.getElementById(id);
+  if(el) el.onclick=function(){ this.classList.toggle('on'); paintPins(); paintArcs(); };
+}
+function paintArcs(){
+  if(!world) return;
+  const a=[];
+  if(document.getElementById('bArc') && document.getElementById('bArc').classList.contains('on')) a.push.apply(a, ARCS);
+  if(document.getElementById('bBird') && document.getElementById('bBird').classList.contains('on')) a.push.apply(a, BIRD_ARCS);
+  try{ world.arcsData(a); }catch(e){}
+}
 function paintPins(){
   if(!world) return;
-  const cities=document.getElementById('bCity').classList.contains('on')?PLACES:[];
-  world.pointsData(cities.concat(livePins));
+  let pts=[];
+  if(document.getElementById('bCity').classList.contains('on')) pts=pts.concat(PLACES);
+  if(document.getElementById('bSea') && document.getElementById('bSea').classList.contains('on')) pts=pts.concat(SEAS, ISLANDS);
+  if(document.getElementById('bIss') && document.getElementById('bIss').classList.contains('on') && issPin) pts=pts.concat([issPin]);
+  if(document.getElementById('bPlane') && document.getElementById('bPlane').classList.contains('on')) pts=pts.concat(planePins);
+  pts=pts.concat(livePins);
+  try{ world.pointsData(pts); }catch(e){}
 }
 
 function orbitPct(){
@@ -1336,13 +1397,15 @@ async function loadToday(){
 async function syncEarth(){
   document.getElementById('mOrb').textContent=orbitPct().toFixed(3)+'%';
   try{
-    const [eq, eo, co2, tmp]=await Promise.allSettled([
+    const [eq, eo, co2, tmp, iss, sky]=await Promise.allSettled([
       fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson').then(r=>r.json()),
       fetch('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=12').then(r=>r.json()),
       fetch('https://global-warming.org/api/co2-api').then(r=>r.json()),
-      fetch('https://global-warming.org/api/temperature-api').then(r=>r.json())
+      fetch('https://global-warming.org/api/temperature-api').then(r=>r.json()),
+      fetch('https://api.wheretheiss.at/v1/satellites/25544').then(r=>r.json()),
+      fetch('https://opensky-network.org/api/states/all').then(r=>r.json())
     ]);
-    livePins=[];
+    livePins=[]; fireN=0;
     if(eq.status==='fulfilled'){
       const feats=(eq.value.features||[]).slice(0,20);
       document.getElementById('mQ').textContent=String(feats.length);
@@ -1364,9 +1427,23 @@ async function syncEarth(){
         if(!g||!g.coordinates) return;
         const [lng,lat]=g.coordinates;
         const fire=/fire|wildfire/i.test(ev.categories&&ev.categories[0]&&ev.categories[0].title||'');
-        livePins.push({name:ev.title, c:'EONET', lat, lng, pop:ev.categories[0]&&ev.categories[0].title, kind:fire?'fire':'quake'});
+        livePins.push({name:ev.title, c:'EONET', lat, lng, pop:ev.categories[0]&&ev.categories[0].title, kind:fire?'fire':'storm'});
+        if(fire) fireN++;
       });
-    }
+      const mf=document.getElementById('mFire'); if(mf) mf.textContent=String(fireN);
+    } else { const mf=document.getElementById('mFire'); if(mf) mf.textContent='—'; }
+    if(iss.status==='fulfilled' && iss.value && iss.value.latitude!=null){
+      issPin={name:'ISS', c:'Orbit', lat:+iss.value.latitude, lng:+iss.value.longitude, pop:Math.round(iss.value.altitude)+' km', kind:'iss'};
+      const mi=document.getElementById('mIss');
+      if(mi) mi.textContent=iss.value.latitude.toFixed(1)+'° '+iss.value.longitude.toFixed(1)+'°';
+    } else { const mi=document.getElementById('mIss'); if(mi) mi.textContent='n/a'; }
+    planePins=[];
+    if(sky.status==='fulfilled' && sky.value && sky.value.states){
+      const st=sky.value.states.filter(s=>s&&s[6]!=null&&s[5]!=null).slice(0,40);
+      planePins=st.map(s=>({name:(s[1]||'flight').trim()||'flight', c:'OpenSky', lat:+s[6], lng:+s[5], pop:s[2]||'', kind:'plane'}));
+      const mf=document.getElementById('mFly'); if(mf) mf.textContent=String(planePins.length);
+    } else { const mf=document.getElementById('mFly'); if(mf) mf.textContent='n/a'; }
+    const mm=document.getElementById('mMoon'); if(mm) mm.textContent=moonPhase();
     if(co2.status==='fulfilled' && co2.value.co2&&co2.value.co2.length){
       document.getElementById('mCo2').textContent=parseFloat(co2.value.co2[co2.value.co2.length-1].trend).toFixed(2)+' ppm';
     } else document.getElementById('mCo2').textContent='n/a';
@@ -1379,7 +1456,7 @@ async function syncEarth(){
       document.getElementById('mTemp').textContent=(v>=0?'+':'')+v.toFixed(2)+'°';
     } else document.getElementById('mTemp').textContent='n/a';
     paintPins();
-    document.getElementById('sync').textContent='sync '+new Date().toLocaleTimeString()+' · USGS Hazards · EONET · wiki';
+    document.getElementById('sync').textContent='sync '+new Date().toLocaleTimeString()+' · USGS · EONET · ISS · OpenSky';
   }catch(e){
     document.getElementById('sync').textContent='sync partial';
     paintPins();
@@ -1395,9 +1472,7 @@ document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
   world.atmosphereColor(m==='ir'?'#ff5a2a': m==='data'?'#3dd6c6':'#9ec9ff');
   world.pointColor(d=> m==='ir' ? '#ff7a3a' : (d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227'));
 });
-document.getElementById('bCity').onclick=function(){ this.classList.toggle('on'); paintPins(); };
-document.getElementById('bArc').onclick=function(){ this.classList.toggle('on'); if(world) world.arcsData(this.classList.contains('on')?ARCS:[]); };
-document.getElementById('bHex').onclick=function(){ this.classList.toggle('on'); };
+onLayer('bCity'); onLayer('bArc'); onLayer('bIss'); onLayer('bPlane'); onLayer('bBird'); onLayer('bSea');
 document.getElementById('alt').oninput=e=>{
   const v=+e.target.value; document.getElementById('altN').textContent=v.toFixed(2);
   if(!world) return;
