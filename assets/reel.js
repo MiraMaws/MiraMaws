@@ -1,11 +1,11 @@
-/* REELS — first tap unlocks sound, then infinite autoplay of unused clips. */
+/* REELS — first tap unlocks sound. Play each clip to the end, then the next. */
 (function(){
   const QS=[
     'viral shorts today','trending meme shorts','funny short clip',
     'world news shorts','crazy fail shorts','animal shorts funny',
     'space shorts','tech shorts viral','sports highlights shorts'
   ];
-  let deck=[], lastId='', soundOn=false, busy=false, loopT=0;
+  let deck=[], lastId='', soundOn=false, busy=false;
   const SEEN_KEY='ww_reel_seen';
   function loadSeen(){
     try{ return JSON.parse(localStorage.getItem(SEEN_KEY)||'[]'); }catch(e){ return []; }
@@ -18,12 +18,22 @@
   }
   function frame(){ return document.getElementById('reelFrame'); }
   function srcFor(id){
-    return 'https://www.youtube.com/embed/'+id+'?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&vq=hd720';
+    const origin=encodeURIComponent(location.origin);
+    return 'https://www.youtube.com/embed/'+id+'?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&enablejsapi=1&vq=hd720&origin='+origin;
+  }
+  function listen(box){
+    try{
+      const w=box.contentWindow;
+      if(!w) return;
+      w.postMessage(JSON.stringify({event:'listening', id:1}), '*');
+      w.postMessage(JSON.stringify({event:'command', func:'addEventListener', args:['onStateChange']}), '*');
+    }catch(e){}
   }
   function mount(id){
     const box=frame(); if(!box||!id) return;
     lastId=id;
     box.src=srcFor(id);
+    box.onload=function(){ listen(box); };
   }
   function mark(id){
     if(!id||seen[id]) return;
@@ -58,24 +68,25 @@
       if(deck.length<4) fillFast();
     } finally { busy=false; }
   }
-  function armLoop(){
-    if(loopT) return;
-    loopT=setInterval(()=>{
-      if(document.body.classList.contains('streetOn')) return;
-      next();
-    }, 9000);
-  }
   function go(){
     if(!soundOn){
       soundOn=true;
       const t=document.getElementById('reelTitle');
       if(t) t.textContent='REELS';
-      next();
-      armLoop();
-      return;
     }
     next();
   }
+  window.addEventListener('message', function(e){
+    if(!soundOn) return;
+    const o=e.origin||'';
+    if(o.indexOf('youtube.com')<0 && o.indexOf('youtube-nocookie.com')<0) return;
+    let d=e.data;
+    if(typeof d==='string'){ try{ d=JSON.parse(d); }catch(err){ return; } }
+    if(!d) return;
+    const ended=(d.event==='onStateChange' && (d.info===0 || d.info==='0'))
+      || (d.info && d.info.playerState===0);
+    if(ended) next();
+  });
   window.initReel=function(){
     const n=document.getElementById('reelNext');
     const p=document.getElementById('reelPrev');
