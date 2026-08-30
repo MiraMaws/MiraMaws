@@ -178,6 +178,7 @@
   @keyframes flash { 50% { box-shadow:0 0 34px #ff7ad9; filter:brightness(1.08); } }
   label.sl { display:flex; justify-content:space-between; font-size:10px; color:var(--d); margin:5px 0 1px; }
   input[type=range] { width:100%; accent-color:var(--hot); }
+  #geoQ { width:100%; margin:4px 0 6px; background:#000; color:#fff; border:1px solid #ffffff55; padding:6px 8px; font:inherit; font-size:11px; }
   .ev { border:1px solid #ffffff33; padding:6px 7px; margin:4px 0; cursor:pointer; background:#050505; }
   .ev:hover { border-color:#fff; box-shadow:0 0 10px #ffffff33; }
   .ev b { display:block; font-size:11px; color:#fff; }
@@ -501,6 +502,7 @@
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.41.4/dist/globe.gl.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css"/>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
 </head>
 <body>
 <div id="aura" aria-hidden="true"></div>
@@ -599,6 +601,8 @@
     <button class="item" id="bStreet">Streets</button>
     <button class="item on" id="bSat">Sats</button>
   </div>
+  <label class="sl">Place</label>
+  <input id="geoQ" type="search" placeholder="OSM search…" autocomplete="off"/>
   <label class="sl">Altitude <b id="altN">2.4</b></label>
   <input id="alt" type="range" min="0.12" max="6" step="0.02" value="2.4"/>
   <label class="sl">Spin <b id="spN">0.4</b></label>
@@ -615,6 +619,7 @@
   <div class="mrow"><span>Orbit</span><b id="mOrb">…</b></div>
   <div class="mrow"><span>Quakes</span><b id="mQ">…</b></div>
   <div class="mrow"><span>Fires</span><b id="mFire">…</b></div>
+  <div class="mrow"><span>Sats</span><b id="mSatN">…</b></div>
   <div class="mrow"><span>ISS</span><b id="mIss">…</b></div>
   <div class="mrow"><span>Planes</span><b id="mFly">…</b></div>
   <div class="mrow"><span>Moon</span><b id="mMoon">…</b></div>
@@ -936,11 +941,14 @@ try{
     .atmosphereAltitude(0.25)
     .pointsData(PLACES)
     .pointLat('lat').pointLng('lng')
-    .pointColor(d=> d.kind==='quake' ? '#ffffff' : d.kind==='fire' ? '#cccccc' : d.kind==='iss' ? '#ffffff' : d.kind==='plane' ? '#bbbbbb' : d.kind==='sea' ? '#888' : d.kind==='isle' ? '#aaa' : d.kind==='sat' ? '#fff' : '#c9a227')
-    .pointAltitude(d=> d.kind==='iss'?0.08: d.kind==='sat'?0.03:0.01)
-    .pointRadius(d=> d.kind==='iss'?0.55: d.kind==='sea'?0.65: d.kind==='plane'?0.12: d.kind==='sat'?0.28:0.22)
+    .pointColor(d=> d.kind==='quake' ? '#ffffff' : d.kind==='fire' ? '#cccccc' : d.kind==='iss' ? '#ffffff' : d.kind==='plane' ? '#bbbbbb' : d.kind==='sea' ? '#888' : d.kind==='isle' ? '#aaa' : d.kind==='sat' ? '#fff' : d.kind==='orb' ? '#fff' : '#c9a227')
+    .pointAltitude(d=> d.kind==='iss'?0.08: d.kind==='orb'?Math.min(0.38, Math.max(0.03,(d.altKm||400)/6371)): d.kind==='sat'?0.03:0.01)
+    .pointRadius(d=> d.kind==='iss'?0.55: d.kind==='sea'?0.65: d.kind==='plane'?0.12: d.kind==='sat'?0.28: d.kind==='orb'?0.16:0.22)
     .pointLabel(d=>d.name+', '+d.c)
-    .onPointClick(d=>flyTo(d, d.name+' · '+d.c));
+    .onPointClick(d=>{
+      if(d.kind==='orb' && window.pickSat){ pickSat(d.name); flyTo(d, d.name+' · '+d.c); return; }
+      flyTo(d, d.name+' · '+d.c);
+    });
   world.controls().autoRotate=true;
   world.controls().autoRotateSpeed=0.4;
   world.pointOfView({lat:18,lng:20,altitude:2.4});
@@ -1491,6 +1499,7 @@ function paintArcs(){
   try{
     const paths=[];
     if(document.getElementById('bSat') && document.getElementById('bSat').classList.contains('on') && issPath.length) paths.push(issPath);
+    if(window.satTrackPath && window.satTrackPath.length) paths.push(window.satTrackPath);
     world.pathsData(paths);
   }catch(e){}
 }
@@ -1501,7 +1510,10 @@ function paintPins(){
   if(document.getElementById('bSea') && document.getElementById('bSea').classList.contains('on')) pts=pts.concat(SEAS, ISLANDS);
   if(document.getElementById('bLand') && document.getElementById('bLand').classList.contains('on')) pts=pts.concat(LANDMARKS);
   if(document.getElementById('bIss') && document.getElementById('bIss').classList.contains('on') && issPin) pts=pts.concat([issPin]);
-  if(document.getElementById('bSat') && document.getElementById('bSat').classList.contains('on')) pts=pts.concat(STATIONS);
+  if(document.getElementById('bSat') && document.getElementById('bSat').classList.contains('on')){
+    pts=pts.concat(STATIONS);
+    if(window.orbPins && window.orbPins.length) pts=pts.concat(window.orbPins);
+  }
   if(document.getElementById('bPlane') && document.getElementById('bPlane').classList.contains('on')) pts=pts.concat(planePins);
   pts=pts.concat(livePins);
   try{ world.pointsData(pts); }catch(e){}
@@ -1829,23 +1841,50 @@ function followHole(){
 }
 const dodoBtn=document.getElementById('dodo');
 if(dodoBtn) dodoBtn.onclick=followHole;
-let streetMap=null;
+let streetMap=null, streetBuilt=false;
+function addBuildings(map){
+  if(!map || streetBuilt) return;
+  try{
+    if(map.getLayer('ww-3d')){ streetBuilt=true; return; }
+    const layers=(map.getStyle().layers)||[];
+    let label;
+    for(let i=0;i<layers.length;i++){
+      if(layers[i].type==='symbol' && layers[i].layout && layers[i].layout['text-field']){ label=layers[i].id; break; }
+    }
+    const srcs=map.getStyle().sources||{};
+    const sid=srcs.openmaptiles?'openmaptiles':(srcs.openfreemap?'openfreemap':Object.keys(srcs)[0]);
+    map.addLayer({
+      id:'ww-3d', type:'fill-extrusion', source:sid, 'source-layer':'building', minzoom:14,
+      paint:{
+        'fill-extrusion-color':'#c8c8c8',
+        'fill-extrusion-opacity':0.86,
+        'fill-extrusion-height':['coalesce',['get','render_height'],['get','height'],10],
+        'fill-extrusion-base':['coalesce',['get','render_min_height'],['get','min_height'],0]
+      }
+    }, label);
+    streetBuilt=true;
+  }catch(e){}
+}
 function openStreet(lat, lng, z){
   const box=document.getElementById('street');
   if(!box || !window.maplibregl){ say('Street map lib not loaded.'); return; }
   document.body.classList.add('streetOn');
   const b=document.getElementById('bStreet'); if(b) b.classList.add('on');
   const c=[+lng||0, +lat||20];
-  const zoom=z||15;
+  const zoom=Math.min(19, Math.max(12, z||16));
   try{
     if(!streetMap){
       streetMap=new maplibregl.Map({
         container:'street',
         style:'https://tiles.openfreemap.org/styles/liberty',
-        center:c, zoom:zoom, pitch:50, bearing:0
+        center:c, zoom:zoom, pitch:62, bearing:-18, maxZoom:19, maxPitch:75,
+        canvasContextAttributes:{antialias:true}
       });
+      streetMap.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'top-right');
+      streetMap.on('load', ()=>addBuildings(streetMap));
     } else {
-      streetMap.setCenter(c); streetMap.setZoom(zoom); streetMap.setPitch(50);
+      streetMap.easeTo({center:c, zoom:zoom, pitch:62, duration:700});
+      addBuildings(streetMap);
     }
   }catch(e){ say('Street tiles failed.'); }
 }
@@ -1859,7 +1898,7 @@ document.getElementById('alt').oninput=e=>{
   const v=+e.target.value; document.getElementById('altN').textContent=v.toFixed(2);
   if(!world) return;
   const pov=world.pointOfView(); world.pointOfView({lat:pov.lat,lng:pov.lng,altitude:v});
-  if(v<=0.38) openStreet(pov.lat, pov.lng, Math.min(16, 11+(0.38-v)*18));
+  if(v<=0.62) openStreet(pov.lat, pov.lng, Math.min(19, 12+(0.62-v)*16));
   else closeStreet();
 };
 document.getElementById('spin').oninput=e=>{
@@ -2185,7 +2224,7 @@ setInterval(()=>{
     if(chip) chip.textContent='ISS · '+j.latitude.toFixed(1)+'° '+j.longitude.toFixed(1)+'° · '+Math.round(j.altitude)+' km';
     paintPins();
   }).catch(()=>{});
-}, 20000);
+}, 5000);
 
 const ASSETS=[
   {id:'BTC', label:'BITCOIN', kind:'cg', cg:'bitcoin'},
@@ -2306,12 +2345,27 @@ async function pullMarkets(){
 paintMkPick();
 pullMarkets();
 setInterval(pullMarkets, 60000);
+const geoQ=document.getElementById('geoQ');
+if(geoQ) geoQ.addEventListener('keydown', async e=>{
+  if(e.key!=='Enter') return;
+  const q=geoQ.value.trim(); if(!q) return;
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q), {headers:{'Accept':'application/json'}});
+    const j=await r.json();
+    if(!j||!j[0]){ say('No OSM hit.'); return; }
+    const lat=+j[0].lat, lng=+j[0].lon;
+    flyTo({name:j[0].display_name, c:'OSM', lat, lng, pop:''}, j[0].display_name, j[0].display_name);
+    openStreet(lat, lng, 17);
+  }catch(err){ say('OSM search failed.'); }
+});
 </script>
 <script src="/assets/trenches.js"></script>
 <script src="/assets/reel.js"></script>
+<script src="/assets/sats.js"></script>
 <script>
 if(window.initTrenches) initTrenches();
 if(window.initReel) initReel();
+if(window.initSats) initSats();
 </script>
 </body>
 </html>
