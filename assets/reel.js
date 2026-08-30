@@ -5,7 +5,7 @@
   function frame(){ return document.getElementById('reelFrame'); }
   function mount(id){
     const box=frame(); if(!box||!id) return;
-    box.src='https://www.youtube.com/embed/'+id+'?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1';
+    box.src='https://www.youtube.com/embed/'+id+'?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3';
     const lab=document.getElementById('reelLab');
     if(lab) lab.textContent='TREND · '+id;
   }
