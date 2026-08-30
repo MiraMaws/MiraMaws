@@ -589,6 +589,7 @@
     <button class="item on" id="bSea">Seas</button>
     <button class="item on" id="bLand">Land</button>
     <button class="item" id="bStreet">Streets</button>
+    <button class="item on" id="bSat">Sats</button>
   </div>
   <label class="sl">Altitude <b id="altN">2.4</b></label>
   <input id="alt" type="range" min="0.12" max="6" step="0.02" value="2.4"/>
@@ -846,7 +847,29 @@ const BIRD_ARCS=[
   {startLat:31.23,startLng:121.47,endLat:33.75,endLng:-118.25},
   {startLat:-33.92,startLng:18.42,endLat:51.51,endLng:-0.13}
 ];
-let issPin=null, planePins=[], fireN=0;
+let issPin=null, planePins=[], fireN=0, issPath=[];
+const STATIONS=[
+  {name:'Goldstone DSN', c:'CA', lat:35.4267, lng:-116.89, pop:'DSN', kind:'sat'},
+  {name:'Madrid DSN', c:'ES', lat:40.4314, lng:-4.248, pop:'DSN', kind:'sat'},
+  {name:'Canberra DSN', c:'AU', lat:-35.4014, lng:148.9817, pop:'DSN', kind:'sat'},
+  {name:'Kourou CSG', c:'GF', lat:5.232, lng:-52.769, pop:'ESA', kind:'sat'},
+  {name:'Baikonur', c:'KZ', lat:45.965, lng:63.305, pop:'Launch', kind:'sat'},
+  {name:'Cape Canaveral', c:'FL', lat:28.4889, lng:-80.5778, pop:'Launch', kind:'sat'},
+  {name:'Jiuquan', c:'CN', lat:40.96, lng:100.29, pop:'Launch', kind:'sat'},
+  {name:'Svalbard SvalSat', c:'NO', lat:78.23, lng:15.39, pop:'Ground', kind:'sat'}
+];
+async function pullIssTrack(){
+  const now=Math.floor(Date.now()/1000);
+  const stamps=[];
+  for(let i=-45;i<=45;i+=3) stamps.push(now+i*60);
+  try{
+    const j=await fetch('https://api.wheretheiss.at/v1/satellites/25544/positions?timestamps='+stamps.join(',')).then(r=>r.json());
+    if(Array.isArray(j) && j.length){
+      issPath=j.map(p=>[+p.latitude, +p.longitude, 0.06]);
+      paintArcs();
+    }
+  }catch(e){}
+}
 const HEX=[...Array(80)].map((_,i)=>{
   const p=PLACES[i%PLACES.length];
   return {lat:p.lat+(Math.random()-0.5)*8, lng:p.lng+(Math.random()-0.5)*10};
@@ -905,9 +928,9 @@ try{
     .atmosphereAltitude(0.25)
     .pointsData(PLACES)
     .pointLat('lat').pointLng('lng')
-    .pointColor(d=> d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : d.kind==='iss' ? '#ffffff' : d.kind==='plane' ? '#39f6ff' : d.kind==='sea' ? '#2d7dff' : d.kind==='isle' ? '#7dffb0' : '#c9a227')
-    .pointAltitude(d=> d.kind==='iss'?0.08:0.01)
-    .pointRadius(d=> d.kind==='iss'?0.55: d.kind==='sea'?0.65: d.kind==='plane'?0.12:0.22)
+    .pointColor(d=> d.kind==='quake' ? '#ffffff' : d.kind==='fire' ? '#cccccc' : d.kind==='iss' ? '#ffffff' : d.kind==='plane' ? '#bbbbbb' : d.kind==='sea' ? '#888' : d.kind==='isle' ? '#aaa' : d.kind==='sat' ? '#fff' : '#c9a227')
+    .pointAltitude(d=> d.kind==='iss'?0.08: d.kind==='sat'?0.03:0.01)
+    .pointRadius(d=> d.kind==='iss'?0.55: d.kind==='sea'?0.65: d.kind==='plane'?0.12: d.kind==='sat'?0.28:0.22)
     .pointLabel(d=>d.name+', '+d.c)
     .onPointClick(d=>flyTo(d, d.name+' · '+d.c));
   world.controls().autoRotate=true;
@@ -916,7 +939,10 @@ try{
   document.body.classList.add('globe-ok');
   try{
     world.arcsData(ARCS)
-      .arcColor(()=>['#39f6ff','#f0c14b']).arcStroke(0.35).arcDashLength(0.4).arcDashGap(0.2).arcDashAnimateTime(4000);
+      .arcColor(()=>['#ffffff','#888']).arcStroke(0.35).arcDashLength(0.4).arcDashGap(0.2).arcDashAnimateTime(4000);
+    world.pathsData([])
+      .pathPointLat(p=>p[0]).pathPointLng(p=>p[1]).pathPointAlt(p=>p[2]||0.01)
+      .pathColor(()=>['#ffffffaa','#ffffff22']).pathStroke(0.7).pathDashLength(0.08).pathDashGap(0.04).pathDashAnimateTime(20000);
   }catch(e){}
 }catch(err){
   world=null;
@@ -1454,6 +1480,11 @@ function paintArcs(){
   if(document.getElementById('bArc') && document.getElementById('bArc').classList.contains('on')) a.push.apply(a, ARCS);
   if(document.getElementById('bBird') && document.getElementById('bBird').classList.contains('on')) a.push.apply(a, BIRD_ARCS);
   try{ world.arcsData(a); }catch(e){}
+  try{
+    const paths=[];
+    if(document.getElementById('bSat') && document.getElementById('bSat').classList.contains('on') && issPath.length) paths.push(issPath);
+    world.pathsData(paths);
+  }catch(e){}
 }
 function paintPins(){
   if(!world) return;
@@ -1462,6 +1493,7 @@ function paintPins(){
   if(document.getElementById('bSea') && document.getElementById('bSea').classList.contains('on')) pts=pts.concat(SEAS, ISLANDS);
   if(document.getElementById('bLand') && document.getElementById('bLand').classList.contains('on')) pts=pts.concat(LANDMARKS);
   if(document.getElementById('bIss') && document.getElementById('bIss').classList.contains('on') && issPin) pts=pts.concat([issPin]);
+  if(document.getElementById('bSat') && document.getElementById('bSat').classList.contains('on')) pts=pts.concat(STATIONS);
   if(document.getElementById('bPlane') && document.getElementById('bPlane').classList.contains('on')) pts=pts.concat(planePins);
   pts=pts.concat(livePins);
   try{ world.pointsData(pts); }catch(e){}
@@ -1759,7 +1791,7 @@ document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
   world.atmosphereColor('#ffffff');
   world.pointColor(d=> m==='ir' ? '#ff7a3a' : (d.kind==='quake' ? '#ff6a3a' : d.kind==='fire' ? '#ffb020' : '#c9a227'));
 });
-onLayer('bCity'); onLayer('bArc'); onLayer('bIss'); onLayer('bPlane'); onLayer('bBird'); onLayer('bSea'); onLayer('bLand');
+onLayer('bCity'); onLayer('bArc'); onLayer('bIss'); onLayer('bPlane'); onLayer('bBird'); onLayer('bSea'); onLayer('bLand'); onLayer('bSat');
 const bSt=document.getElementById('bStreet');
 if(bSt) bSt.onclick=function(){
   if(this.classList.contains('on')){ closeStreet(); this.classList.remove('on'); return; }
@@ -2131,9 +2163,10 @@ if(window.matchMedia && matchMedia('(max-width:820px)').matches){
   document.getElementById('left').classList.add('hideL');
   document.getElementById('right').classList.add('hideR');
 }
-loadToday().then(()=>{ paintNews(); return syncEarth(); });
+loadToday().then(()=>{ paintNews(); return syncEarth(); }).then(()=>pullIssTrack());
 setInterval(()=>{ loadToday().then(()=>paintNews()); }, 10000);
 setInterval(()=>{ syncEarth(); }, 60000);
+setInterval(pullIssTrack, 90000);
 setInterval(()=>{
   fetch('https://api.wheretheiss.at/v1/satellites/25544').then(r=>r.json()).then(j=>{
     if(!j||j.latitude==null) return;
