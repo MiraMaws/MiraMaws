@@ -5,7 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>White Wings</title>
 <style>
-  :root { --g:#ff4ec8; --c:#c44dff; --m:#ff2ea6; --ink:#f4e8ff; --d:#9a7ab8; --bg:#070312; --pan:#12061ce8; --line:#3a1458; --hot:#ff3d9a; --ok:#39f6c0; }
+  :root { --g:#ff4ec8; --c:#c44dff; --m:#ff2ea6; --ink:#f4e8ff; --d:#9a7ab8; --bg:#070312; --pan:#12061ce8; --line:#3a1458; --hot:#ff3d9a; --ok:#39f6c0;
+    --shift: 0deg; }
+  @keyframes gridShift {
+    0% { --shift: 0deg; }
+    50% { --shift: 40deg; }
+    100% { --shift: 0deg; }
+  }
+  html { animation: gridShift 28s ease-in-out infinite; }
+  #aura {
+    position:fixed; inset:0; z-index:3; pointer-events:none;
+    background:
+      radial-gradient(ellipse at 20% 30%, #c44dff22, transparent 42%),
+      radial-gradient(ellipse at 80% 70%, #ff2ea622, transparent 45%),
+      repeating-linear-gradient(115deg, transparent 0 18px, #ff9adf08 19px, transparent 28px);
+    mix-blend-mode:screen; opacity:.55;
+    animation: auraDrift 22s linear infinite;
+  }
+  @keyframes auraDrift {
+    0% { filter:hue-rotate(0deg); transform:translate3d(0,0,0); }
+    50% { filter:hue-rotate(25deg); transform:translate3d(-1.5%, 1%, 0); }
+    100% { filter:hue-rotate(0deg); transform:translate3d(0,0,0); }
+  }
+  .hud { animation: hudBreathe 8s ease-in-out infinite; }
+  @keyframes hudBreathe {
+    0%,100% { box-shadow:0 0 0 #c44dff00; }
+    50% { box-shadow:0 0 18px #c44dff33; }
+  }
   * { box-sizing:border-box; margin:0; }
   html,body,#globe { height:100%; background:var(--bg); color:var(--ink); font-family:"Segoe UI",ui-sans-serif,system-ui,sans-serif; overflow:hidden;
     font-size:clamp(11px, 0.85vw + 9px, 16px); }
@@ -247,6 +273,11 @@
   }
   body.lOff #dodo { left:14px; }
   #dodo:hover { transform:scale(1.06); }
+  #dodo img { animation: dodoBob 3.4s ease-in-out infinite; }
+  @keyframes dodoBob {
+    0%,100% { transform:translateY(0) rotate(-2deg); }
+    50% { transform:translateY(-6px) rotate(3deg); }
+  }
   #census .mk { cursor:pointer; }
   #mira .tag {
     position:absolute; left:0; right:0; bottom:0; z-index:2; margin:0; padding:4px 0 5px;
@@ -344,6 +375,7 @@
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.min.js"></script>
 </head>
 <body>
+<div id="aura" aria-hidden="true"></div>
 <div id="globe"></div>
 <div id="street"></div>
 <button type="button" id="streetX" class="item">✕ GLOBE</button>
