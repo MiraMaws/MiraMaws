@@ -313,21 +313,28 @@
     border-radius:22px;
   }
   body.rOff #reelSide { right:12px; }
-  body.lOff #reelSide { }
   #right:not(.hideR) ~ #reelSide, body:not(.rOff) #reelSide { right:262px; }
   body.shopOn #reelSide, body.trenchOn #reelSide { display:none; }
+  #reelStage { position:relative; flex:1; min-height:0; display:flex; }
   #reelFrame {
     flex:1; width:100%; height:100%; min-height:568px; border:0; background:#000;
     aspect-ratio:9/16; border-radius:16px;
   }
-  #reelLab { font-size:9px; letter-spacing:.12em; color:#ff9adf; margin:6px 0 4px; text-align:center; }
-  #reelNav { display:flex; gap:4px; }
+  #reelTitle {
+    position:absolute; left:0; right:0; top:12px; transform:none;
+    text-align:center; pointer-events:none; z-index:2;
+    font-size:22px; letter-spacing:.42em; font-weight:800; color:#fff;
+    text-shadow:0 0 18px #ff2ea6, 0 2px 8px #000;
+  }
+  #reelLab { display:none; }
+  #reelNav { display:flex; gap:4px; margin-top:6px; }
   @media (max-width:820px){
     #reelSide {
       display:flex; right:6px; top:40px;
       width:min(360px, 48vw); height:min(640px, calc(100vh - 160px));
     }
     #reelFrame { min-height:0; }
+    #reelTitle { font-size:14px; letter-spacing:.28em; }
   }
   body.streetOn #streetX { display:block; }
   #streetX { position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:10; display:none; }
@@ -577,9 +584,11 @@
 </div>
 <div id="locTab" aria-live="polite"></div>
 <div id="reelSide" class="hud">
-  <div class="mktitle">REEL</div>
-  <iframe id="reelFrame" title="shorts reel" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-  <div id="reelLab">SHORT · —</div>
+  <div id="reelStage">
+    <iframe id="reelFrame" title="REELS" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <div id="reelTitle">REELS</div>
+  </div>
+  <div id="reelLab"></div>
   <div id="reelNav">
     <button type="button" class="item" id="reelPrev">▲</button>
     <button type="button" class="item" id="reelNext">▼ NEXT</button>
