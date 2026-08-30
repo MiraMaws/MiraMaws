@@ -13,8 +13,7 @@
     100% { --shift: 0deg; }
   }
   html { animation: gridShift 28s ease-in-out infinite; }
-  #aura {
-    position:fixed; inset:0; z-index:3; pointer-events:none;
+  #aura { position:fixed; inset:0; z-index:1; pointer-events:none;
     background:
       radial-gradient(ellipse at 20% 30%, #c44dff22, transparent 42%),
       radial-gradient(ellipse at 80% 70%, #ff2ea622, transparent 45%),
@@ -264,7 +263,23 @@
   @media (max-width:820px){ #mkBar { display:none !important; } }
   #street { position:fixed; inset:0; z-index:2; display:none; }
   body.streetOn #street { display:block; }
-  body.streetOn #globe, body.streetOn #sol, body.streetOn #fallback, body.streetOn #reel { opacity:.12; pointer-events:none; }
+  body.streetOn #aura { display:none; }
+  #trenches {
+    position:fixed; left:50%; top:10px; bottom:128px; transform:translateX(-50%);
+    z-index:8; width:min(740px,72vw); display:none; overflow:auto; padding:12px;
+  }
+  body.trenchOn #trenches { display:block; }
+  body.trenchOn #shop { display:none; }
+  #trenches h1 { text-align:center; }
+  .trcard { border:1px solid var(--line); padding:8px; margin:6px 0; background:#0c0418; }
+  .trcard b { display:block; font-size:12px; margin-bottom:4px; }
+  .trmeta { color:var(--d); font-size:10px; margin-bottom:6px; }
+  .trbtns { display:flex; gap:6px; flex-wrap:wrap; }
+  .trbtns button { font-size:10px; padding:5px 8px; cursor:pointer; background:#1a0828; color:#f4e8ff; border:1px solid #c44dff66; }
+  #trTabs { display:flex; gap:6px; margin:8px 0; }
+  #trTabs button.on { border-color:#ff9adf; color:#fff; }
+  .trrow { font-size:11px; border-top:1px solid #3a145844; padding:4px 0; }
+  #trBank { color:#39f6c0; }
   body.streetOn #streetX { display:block; }
   #streetX { position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:10; display:none; }
   #dodo {
@@ -536,6 +551,18 @@
     <a class="order" href="https://www.etsy.com/shop/MiraMaws" target="_blank" rel="noopener">ORDER ON ETSY</a>
   </article>
 </div>
+<div id="trenches" class="hud">
+  <h1>THE TRENCHES</h1>
+  <p class="sub" style="text-align:center">Paper desk · not a licensed book · public wires only</p>
+  <p>BANK <b id="trBank">—</b> · slip size <input id="trQty" type="number" min="1" max="500" value="10" style="width:64px;background:#0c0418;color:#fff;border:1px solid #3a1458"/></p>
+  <div id="trTabs">
+    <button type="button" class="item on" data-t="poly">POLY</button>
+    <button type="button" class="item" data-t="sport">SPORT</button>
+    <button type="button" class="item" data-t="desk">DESK</button>
+  </div>
+  <div id="trList"></div>
+  <div id="trPos"></div>
+</div>
 <div id="bar" class="hud">
   <div id="mira" title="Mira — desk anchor">
     <div class="frame">
@@ -554,6 +581,7 @@
   <div class="buys">
     <button class="buy" id="bNow" type="button"><b>CURRENT NEWS</b><small>main desk</small></button>
     <button class="buy" id="bShop" type="button"><b>SHOP</b><small>desk goods</small></button>
+    <button class="buy" id="bTrench" type="button"><b>TRENCHES</b><small>paper book</small></button>
     <button class="buy" id="bShort" type="button"><b>SHORTS</b><small>2–15s memes</small></button>
     <button class="buy" id="bMid" type="button"><b>MEDIUM</b><small>1–5 min dumps</small></button>
     <button class="buy" id="bLong" type="button"><b>LONG</b><small>30–60 min</small></button>
@@ -2038,5 +2066,7 @@ paintMkPick();
 pullMarkets();
 setInterval(pullMarkets, 60000);
 </script>
+<script src="/assets/trenches.js"></script>
+<script>if(window.initTrenches) initTrenches();</script>
 </body>
 </html>
