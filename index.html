@@ -1922,6 +1922,7 @@ function bindCityOrbit(map){
   el.addEventListener('pointerup', up);
   el.addEventListener('pointercancel', up);
 }
+function closeStreet(){
   document.body.classList.remove('streetOn');
   const b=document.getElementById('bStreet'); if(b) b.classList.remove('on');
 }
