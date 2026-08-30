@@ -511,7 +511,7 @@
 <div id="hudRing" aria-hidden="true"></div>
 <div id="globe"></div>
 <div id="street"></div>
-<button type="button" id="streetX" class="item">✕ GLOBE</button>
+<button type="button" id="streetX" class="item">✕ GLOBE · drag orbit</button>
 <button type="button" id="dodo" title="Follow the dodo">
   <img src="/assets/dodo.svg" alt="Dodo"/>
 </button>
@@ -1881,14 +1881,47 @@ function openStreet(lat, lng, z){
         canvasContextAttributes:{antialias:true}
       });
       streetMap.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'top-right');
-      streetMap.on('load', ()=>addBuildings(streetMap));
+      streetMap.on('load', ()=>{ addBuildings(streetMap); bindCityOrbit(streetMap); });
     } else {
       streetMap.easeTo({center:c, zoom:zoom, pitch:62, duration:700});
       addBuildings(streetMap);
     }
   }catch(e){ say('Street tiles failed.'); }
 }
-function closeStreet(){
+function bindCityOrbit(map){
+  if(!map || map._wwOrbit) return;
+  map._wwOrbit=true;
+  try{ map.dragRotate.enable(); map.touchZoomRotate.enableRotation(); map.touchPitch.enable(); }catch(e){}
+  try{ map.dragPan.disable(); }catch(e){}
+  const el=map.getCanvasContainer();
+  el.style.cursor='grab';
+  let on=false, pan=false, x=0, y=0;
+  el.addEventListener('pointerdown', e=>{
+    x=e.clientX; y=e.clientY;
+    if(e.button===2 || e.shiftKey){ pan=true; on=false; }
+    else if(e.button===0){ on=true; pan=false; }
+    else return;
+    el.style.cursor='grabbing';
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+    e.preventDefault();
+  });
+  el.addEventListener('contextmenu', e=>e.preventDefault());
+  el.addEventListener('pointermove', e=>{
+    const dx=e.clientX-x, dy=e.clientY-y;
+    if(on){
+      x=e.clientX; y=e.clientY;
+      const b=((map.getBearing()+dx*0.55)%360+360)%360;
+      const p=Math.max(0, Math.min(75, map.getPitch()-dy*0.32));
+      map.jumpTo({bearing:b, pitch:p});
+    } else if(pan){
+      x=e.clientX; y=e.clientY;
+      map.panBy([-dx, -dy], {duration:0});
+    }
+  });
+  const up=()=>{ on=false; pan=false; el.style.cursor='grab'; };
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', up);
+}
   document.body.classList.remove('streetOn');
   const b=document.getElementById('bStreet'); if(b) b.classList.remove('on');
 }
