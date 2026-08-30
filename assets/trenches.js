@@ -108,6 +108,7 @@
   window.openTrenches=function(){
     document.body.classList.add('trenchOn');
     document.body.classList.remove('shopOn');
+    if(window.setTrench) setTrench(true);
     paint(); quotes();
   };
   window.closeTrenches=function(){ document.body.classList.remove('trenchOn'); };
