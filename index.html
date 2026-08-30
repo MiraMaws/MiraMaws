@@ -389,11 +389,18 @@
   body.streetOn #streetX { display:block; }
   #streetX { position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:10; display:none; }
   #dodo {
-    position:fixed; left:14px; top:48%; z-index:7; width:64px; cursor:pointer;
-    filter:drop-shadow(0 0 10px #ffffff88);
+    position:fixed; left:268px; bottom:118px; top:auto; z-index:12; width:42px; cursor:pointer;
+    filter:grayscale(1) drop-shadow(0 0 8px #ffffff66);
   }
-  body.lOff #dodo { left:14px; }
-  #dodo:hover { transform:scale(1.06); }
+  body.lOff #dodo { left:10px; }
+  #dodo:hover { transform:scale(1.08); }
+  #satChip {
+    position:fixed; left:318px; bottom:124px; z-index:12;
+    font-size:10px; letter-spacing:.12em; color:#fff;
+    background:#000c; border:1px solid #ffffff55; padding:4px 8px;
+    pointer-events:none;
+  }
+  body.lOff #satChip { left:58px; }
   #dodo img { animation: dodoBob 3.4s ease-in-out infinite; }
   @keyframes dodoBob {
     0%,100% { transform:translateY(0) rotate(-2deg); }
@@ -506,6 +513,7 @@
 <button type="button" id="dodo" title="Follow the dodo">
   <img src="/assets/dodo.svg" alt="Dodo"/>
 </button>
+<div id="satChip">ISS · —</div>
 <video id="reel" src="assets/earth_spin.mp4" muted loop playsinline autoplay></video>
 <audio id="chatter" src="/assets/chatter.mp3" loop preload="auto"></audio>
 <div id="fallback" aria-hidden="true"><div class="land"></div><div class="shade"></div></div>
@@ -2173,6 +2181,8 @@ setInterval(()=>{
     issPin={name:'ISS', c:'Orbit', lat:+j.latitude, lng:+j.longitude, pop:Math.round(j.altitude)+' km', kind:'iss'};
     const mi=document.getElementById('mIss');
     if(mi) mi.textContent=j.latitude.toFixed(1)+'° '+j.longitude.toFixed(1)+'°';
+    const chip=document.getElementById('satChip');
+    if(chip) chip.textContent='ISS · '+j.latitude.toFixed(1)+'° '+j.longitude.toFixed(1)+'° · '+Math.round(j.altitude)+' km';
     paintPins();
   }).catch(()=>{});
 }, 20000);
