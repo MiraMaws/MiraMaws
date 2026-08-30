@@ -78,19 +78,26 @@
     background:linear-gradient(118deg,#fff2,transparent 36%,#0009 80%); }
   body.globe-ok #fallback { display:none; }
   .hud {
+    position:relative;
     background:
-      linear-gradient(var(--c),var(--c)) top left / 14px 1px no-repeat,
-      linear-gradient(var(--c),var(--c)) top left / 1px 14px no-repeat,
-      linear-gradient(var(--c),var(--c)) top right / 14px 1px no-repeat,
-      linear-gradient(var(--c),var(--c)) top right / 1px 14px no-repeat,
-      linear-gradient(var(--m),var(--m)) bottom left / 14px 1px no-repeat,
-      linear-gradient(var(--m),var(--m)) bottom left / 1px 14px no-repeat,
-      linear-gradient(var(--m),var(--m)) bottom right / 14px 1px no-repeat,
-      linear-gradient(var(--m),var(--m)) bottom right / 1px 14px no-repeat,
+      linear-gradient(#fff,#fff) top left / 16px 1px no-repeat,
+      linear-gradient(#fff,#fff) top left / 1px 16px no-repeat,
+      linear-gradient(#fff,#fff) top right / 16px 1px no-repeat,
+      linear-gradient(#fff,#fff) top right / 1px 16px no-repeat,
+      linear-gradient(#fff,#fff) bottom left / 16px 1px no-repeat,
+      linear-gradient(#fff,#fff) bottom left / 1px 16px no-repeat,
+      linear-gradient(#fff,#fff) bottom right / 16px 1px no-repeat,
+      linear-gradient(#fff,#fff) bottom right / 1px 16px no-repeat,
       var(--pan);
     border:1px solid #ffffff55;
     box-shadow:0 0 18px #ffffff22, inset 0 0 24px #0008;
   }
+  .hud::before {
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:.12;
+    background:repeating-linear-gradient(180deg, transparent 0 2px, #fff1 3px);
+    animation: scan 6s linear infinite;
+  }
+  @keyframes scan { 0% { background-position:0 0; } 100% { background-position:0 24px; } }
   .side { position:fixed; top:10px; bottom:108px; z-index:6; width:250px;
     padding:10px 10px 8px; overflow:hidden; }
   #left { left:10px; }
@@ -239,36 +246,36 @@
     20% { filter:hue-rotate(20deg) contrast(1.15); box-shadow:inset 0 0 18px #000a, 0 0 0 2px #ffffff, 3px 0 #39f6c0, -3px 0 #ffffff; }
     40% { filter:none; box-shadow:inset 0 0 18px #000a, 0 0 0 2px #ffffff; }
     55% { filter:saturate(1.4); box-shadow:inset 0 0 18px #000a, 0 0 12px #ffffff, -4px 1px #ffffff; }
-    70% { filter:none; box-shadow:inset 0 0 18px #000a, 0 0 0 2px #a855f7; }
+    70% { filter:none; box-shadow:inset 0 0 18px #000a, 0 0 0 2px #fff; }
     85% { filter:contrast(1.2); box-shadow:inset 0 0 18px #000a, 0 0 0 3px #39f6c0, 2px -2px #ffffff; }
     100% { filter:none; box-shadow:inset 0 0 18px #000a, 0 0 0 2px #ffffff; }
   }
   #locTab {
     position:fixed; left:50%; top:38%; z-index:8; display:none; pointer-events:none;
     transform:translate(80px,-20px); min-width:160px; max-width:280px;
-    padding:8px 10px; background:#06140ee8; border:1px solid #2dff7a;
-    box-shadow:0 0 16px #2dff7a44, inset 0 0 12px #0008; color:#b8ffd4;
+    padding:8px 10px; background:#050505e8; border:1px solid #fff;
+    box-shadow:0 0 16px #ffffff44, inset 0 0 12px #0008; color:#ddd;
     font-size:11px; letter-spacing:.06em; overflow:hidden;
   }
   #locTab.show { display:block; animation:locGlare 9s ease-out forwards; }
   #locTab.show::after {
     content:""; position:absolute; inset:-2px; pointer-events:none;
-    background:linear-gradient(110deg, transparent 0 38%, #2dff7acc 50%, transparent 62%);
+    background:linear-gradient(110deg, transparent 0 38%, #ffffffcc 50%, transparent 62%);
     mix-blend-mode:screen; animation:locSweep 9s linear forwards;
   }
-  #locTab b { display:block; color:#2dff7a; font-size:12px; letter-spacing:.12em;
-    text-shadow:0 0 8px #2dff7a88; }
+  #locTab b { display:block; color:#fff; font-size:12px; letter-spacing:.12em;
+    text-shadow:0 0 8px #ffffff88; }
   @keyframes locGlare {
-    0% { opacity:0; filter:blur(1.5px) hue-rotate(40deg); box-shadow:0 0 0 #2dff7a; }
-    6% { opacity:1; filter:none; box-shadow:0 0 28px #2dff7a, 0 0 70px #2dff7a77; }
-    10% { transform:translate(82px,-22px); text-shadow:-2px 0 #ffffff, 2px 0 #39f6ff; }
-    13% { transform:translate(78px,-18px); text-shadow:2px 0 #ffffff, -2px 0 #39f6ff; }
+    0% { opacity:0; filter:blur(1.5px); box-shadow:0 0 0 #fff; }
+    6% { opacity:1; filter:none; box-shadow:0 0 28px #fff, 0 0 70px #ffffff77; }
+    10% { transform:translate(82px,-22px); text-shadow:-2px 0 #aaa, 2px 0 #fff; }
+    13% { transform:translate(78px,-18px); text-shadow:2px 0 #aaa, -2px 0 #fff; }
     16% { transform:translate(80px,-20px); text-shadow:none; }
-    28% { box-shadow:0 0 36px #2dff7a, inset 0 0 18px #2dff7a33; filter:saturate(1.5); }
-    40% { filter:none; box-shadow:0 0 18px #2dff7a88; }
-    52% { transform:translate(81px,-21px); text-shadow:-1px 0 #39f6ff; }
-    55% { transform:translate(80px,-20px); text-shadow:none; }
-    78% { opacity:1; box-shadow:0 0 22px #2dff7a66; }
+    28% { box-shadow:0 0 36px #fff, inset 0 0 18px #ffffff33; }
+    40% { filter:none; box-shadow:0 0 18px #ffffff88; }
+    52% { transform:translate(81px,-21px); }
+    55% { transform:translate(80px,-20px); }
+    78% { opacity:1; box-shadow:0 0 22px #ffffff66; }
     100% { opacity:0; box-shadow:0 0 0 transparent; filter:blur(1px); }
   }
   @keyframes locSweep {
@@ -843,7 +850,7 @@ try{
     .globeImageUrl(TEX.natural)
     .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
     .backgroundImageUrl(TEX.stars)
-    .atmosphereColor('#9ec9ff')
+    .atmosphereColor('#ffffff')
     .atmosphereAltitude(0.25)
     .pointsData(PLACES)
     .pointLat('lat').pointLng('lng')
@@ -1563,7 +1570,7 @@ async function loadToday(){
   const n=new Date();
   const feed=document.getElementById('feed');
   const arch=document.getElementById('arch');
-  feed.textContent='Loading today…';
+  if(!feed.childElementCount) feed.textContent='Loading today…';
   await ingestFeatured(n);
   if(!liveStories.length){
     const y=new Date(n); y.setUTCDate(y.getUTCDate()-1);
@@ -1598,7 +1605,8 @@ async function loadToday(){
   }
   liveStories.sort((a,b)=>(b.views||0)-(a.views||0));
   newsI=0;
-  liveStories.filter(s=>!seen.has(s.title)).forEach(s=>{
+  feed.innerHTML='';
+  liveStories.slice(0,16).forEach(s=>{
     const place=matchPlace(s.title+' '+s.text);
     card(feed, '2026 · '+s.title, s.text, place, s.text);
   });
@@ -1920,7 +1928,7 @@ function setTrench(on){
   if(bTrenchLook) bTrenchLook.textContent=on?'TRENCH · ON':'TRENCH LOOK';
   try{
     if(world){
-      world.atmosphereColor(on?'#ff4a1a':'#9ec9ff');
+      world.atmosphereColor(on?'#ffffff':'#ffffff');
       world.atmosphereAltitude(on?0.32:0.25);
     }
   }catch(e){}
